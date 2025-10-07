@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🔐 Dijital Ayak İzi Farkındalık Uygulaması
 
 ## 📋 Proje Açıklaması
@@ -79,3 +80,7 @@ Bu proje eğitim amaçlıdır ve ticari kullanım için lisans gerektirir.
 **Geliştirici**: Siber Güvenlik Projesi  
 **Versiyon**: 1.0.0  
 **Son Güncelleme**: 2024
+=======
+# dijital-ayak-izi
+Dijital Ayak İzi Farkındalık Uygulaması
+>>>>>>> ca12cf76aab15f94603d76bfeb826e4a0b5a0d72
