@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijital Ayak İzi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #475569;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        /* Dark mode specific styles */
+        [data-theme="dark"] .card h2 {
+            color: var(--text-primary);
+        }
+        
+        [data-theme="dark"] label {
+            color: var(--text-secondary);
+        }
+        
+        [data-theme="dark"] input[type="text"], 
+        [data-theme="dark"] input[type="email"] {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        [data-theme="dark"] input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        
+        [data-theme="dark"] .result {
+            background: var(--bg-card);
+            border-left-color: #6366f1;
+        }
+        
+        [data-theme="dark"] .result-item {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .result-item .description {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border-left-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .tabs {
+            border-bottom-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .tab {
+            color: var(--text-secondary);
+        }
+        
+        [data-theme="dark"] .tab:hover {
+            color: #6366f1;
+        }
+        
+        [data-theme="dark"] .tab.active {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+        
+        [data-theme="dark"] .confirmation-modal {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .confirmation-item {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .confirmation-item:hover {
+            border-color: #6366f1;
+        }
+        
+        [data-theme="dark"] .confirmation-item.selected {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        [data-theme="dark"] .confidence-bar {
+            background: var(--border-color);
+        }
+        
+        /* Risk skoru ve diğer elementler */
+        [data-theme="dark"] .risk-score {
+            color: var(--text-primary);
+        }
+        
+        [data-theme="dark"] .risk-level {
+            color: var(--text-primary);
+        }
+        
+        [data-theme="dark"] .loading {
+            color: var(--text-secondary);
+        }
+        
+        [data-theme="dark"] .error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+        
+        [data-theme="dark"] .info-box {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+        
+        [data-theme="dark"] .location-info {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+        
+        [data-theme="dark"] .profile-photo {
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .new-search-btn {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        [data-theme="dark"] .new-search-btn:hover {
+            background: var(--border-color);
+        }
+        
+        /* Profile photo styles */
+        .profile-photo {
+            border: 3px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        [data-theme="dark"] .profile-photo {
+            border-color: var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .profile-placeholder {
+            width: 80px; 
+            height: 80px; 
+            border-radius: 50%; 
+            background: #f1f5f9; 
+            border: 3px solid #e2e8f0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto;
+        }
+        
+        [data-theme="dark"] .profile-placeholder {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+        }
+        
+        .profile-icon {
+            font-size: 2rem; 
+            color: #94a3b8;
+        }
+        
+        [data-theme="dark"] .profile-icon {
+            color: var(--text-secondary);
+        }
+        
+        .profile-text {
+            font-size: 0.8rem; 
+            color: #64748b; 
+            margin-top: 0.5rem;
+        }
+        
+        [data-theme="dark"] .profile-text {
+            color: var(--text-secondary);
+        }
+        
+        /* Location coordinates */
+        .location-coords {
+            font-family: monospace; 
+            background: #1f2937; 
+            color: #fbbf24; 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 4px; 
+            margin: 0.25rem 0; 
+            display: inline-block;
+        }
+        
+        [data-theme="dark"] .location-coords {
+            background: #374151;
+            color: #fbbf24;
+        }
+        
+        /* Map link */
+        .map-link {
+            color: #1e40af; 
+            text-decoration: none;
+        }
+        
+        [data-theme="dark"] .map-link {
+            color: #60a5fa;
+        }
+        
+        /* Coordinates */
+        .coordinates {
+            font-family: monospace;
+            background: #1f2937;
+            color: #fbbf24;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin: 0.25rem 0;
+            display: inline-block;
+        }
+        
+        [data-theme="dark"] .coordinates {
+            background: #374151;
+            color: #fbbf24;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        .navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #6366f1;
+        }
+        
+        /* Dark mode navbar */
+        [data-theme="dark"] .navbar h1 {
+            color: #6366f1;
+        }
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            background: var(--border-color);
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            color: #6366f1;
+        }
+        .tab.active {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        
+        /* Dark mode card h2 */
+        [data-theme="dark"] .card h2 {
+            color: var(--text-primary);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        
+        /* Dark mode label */
+        [data-theme="dark"] label {
+            color: var(--text-secondary);
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.2s;
+            background: white;
+            color: #1e293b;
+        }
+        
+        /* Dark mode input */
+        [data-theme="dark"] input[type="text"], 
+        [data-theme="dark"] input[type="email"] {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        /* Dark mode input focus */
+        [data-theme="dark"] input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 8px;
+            border-left: 4px solid #6366f1;
+        }
+        
+        /* Dark mode result */
+        [data-theme="dark"] .result {
+            background: var(--bg-card);
+            border-left-color: #6366f1;
+        }
+        .result-item {
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        /* Dark mode result item */
+        [data-theme="dark"] .result-item {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+        .result-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #6366f1;
+        }
+        .result-item a {
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+        }
+        .result-item a:hover {
+            text-decoration: underline;
+        }
+        .result-item .description {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #f8fafc;
+            border-radius: 4px;
+            border-left: 3px solid #e2e8f0;
+        }
+        
+        /* Dark mode description */
+        [data-theme="dark"] .result-item .description {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border-left-color: var(--border-color);
+        }
+        .result-item .image-preview {
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+        .result-item .image-preview img {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .result-item .image-preview img:hover {
+            transform: scale(1.05);
+        }
+        .result-item .type-badge {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .type-badge.web { background: #dbeafe; color: #1e40af; }
+        .type-badge.social { background: #fef3c7; color: #92400e; }
+        .type-badge.image { background: #f3e8ff; color: #7c3aed; }
+        .type-badge.breach { background: #fee2e2; color: #991b1b; }
+        .type-badge.archive { background: #f0fdf4; color: #166534; }
+        
+        /* Dark mode type badges */
+        [data-theme="dark"] .type-badge.web { background: #1e3a8a; color: #93c5fd; }
+        [data-theme="dark"] .type-badge.social { background: #92400e; color: #fcd34d; }
+        [data-theme="dark"] .type-badge.image { background: #7c3aed; color: #c4b5fd; }
+        [data-theme="dark"] .type-badge.breach { background: #991b1b; color: #fca5a5; }
+        [data-theme="dark"] .type-badge.archive { background: #166534; color: #86efac; }
+        
+        .confidence-bar {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .confirmation-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+        }
+        .confirmation-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            margin: 1rem;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .confirmation-header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .confirmation-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .confirmation-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        .confirmation-content {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .confirmation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: white;
+        }
+        .confirmation-item:hover {
+            border-color: #6366f1;
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+        }
+        .confirmation-item.selected {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+        }
+        .confirmation-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .confirmation-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .confirmation-checkbox.checked {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+            transform: scale(1.1);
+        }
+        .confirmation-item-content {
+            flex: 1;
+        }
+        .confirmation-item-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        .confirmation-item-url {
+            font-size: 0.9rem;
+            color: #6366f1;
+            margin-bottom: 0.75rem;
+            word-break: break-all;
+        }
+        .confirmation-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .confirmation-confidence {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .confirmation-confidence.high { color: #10b981; }
+        .confirmation-confidence.medium { color: #f59e0b; }
+        .confirmation-confidence.low { color: #ef4444; }
+        .confirmation-snippet {
+            font-size: 0.9rem;
+            color: #64748b;
+            line-height: 1.5;
+            background: #f8fafc;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border-left: 3px solid #e2e8f0;
+        }
+        .confirmation-footer {
+            padding: 2rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .confirmation-btn {
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 160px;
+        }
+        .confirmation-btn.primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .confirmation-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        .confirmation-btn.secondary {
+            background: #6b7280;
+            color: white;
+        }
+        .confirmation-btn.secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+        
+        .location-info {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .location-info .coordinates {
+            font-family: monospace;
+            background: #1f2937;
+            color: #fbbf24;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin: 0.25rem 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        
+        /* Dark mode badges */
+        [data-theme="dark"] .badge-success { background: #166534; color: #86efac; }
+        [data-theme="dark"] .badge-warning { background: #92400e; color: #fcd34d; }
+        [data-theme="dark"] .badge-danger { background: #991b1b; color: #fca5a5; }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #1e40af;
+            font-size: 0.9rem;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #f8fafc;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #94a3b8;
+        }
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .navbar { padding: 1rem; }
+            .card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🔐 Dijital Ayak İzi</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span id="theme-icon">🌙</span> <span id="theme-text">Dark Mode</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('scan')">🔍 İz Tarama</button>
+            <button class="tab" onclick="showTab('image')">📷 Görsel Analiz</button>
+            <button class="tab" onclick="showTab('account')">👤 Hesap</button>
+        </div>
+
+        <!-- İz Tarama Sekmesi -->
+        <div id="scan" class="tab-content active">
+            <div class="card">
+                <h2>Dijital İzinizi Tarayın</h2>
+                <div class="info-box">
+                    💡 Adınızı girerek internette hangi bilgilerinizin açık olduğunu öğrenin
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Ad</label>
+                        <input type="text" id="firstName" placeholder="Adınız">
+                    </div>
+                    <div class="form-group">
+                        <label>Soyad</label>
+                        <input type="text" id="lastName" placeholder="Soyadınız">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>E-posta (opsiyonel)</label>
+                    <input type="email" id="email" placeholder="ornek@email.com">
+                    <div class="info-box" style="margin-top: 0.5rem; font-size: 0.85rem;">
+                        🔍 E-posta girerseniz veri ihlali kontrolü yapılır (HaveIBeenPwned)
+                    </div>
+                </div>
+
+                <button class="btn" onclick="doSelfScan()">🔍 Taramayı Başlat</button>
+                
+                <div id="scanResults"></div>
+            </div>
+        </div>
+        
+        <!-- Onaylama Ekranı -->
+        <div id="confirmationScreen" class="confirmation-screen">
+            <div class="confirmation-modal">
+                <div class="confirmation-header">
+                    <h2>🔍 Profil Doğrulama</h2>
+                    <p>Size ait olan profilleri seçin. Sadece onayladığınız profiller için detaylı analiz yapılacak.</p>
+                </div>
+                
+                <div class="confirmation-content">
+                    <div id="confirmationItems"></div>
+                </div>
+                
+                <div class="confirmation-footer">
+                    <button class="confirmation-btn primary" onclick="proceedWithDetailedScan()">
+                        ✅ Detaylı Analizi Başlat
+                    </button>
+                    <button class="confirmation-btn secondary" onclick="closeConfirmation()">
+                        ❌ İptal
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Görsel Analiz Sekmesi -->
+        <div id="image" class="tab-content">
+            <div class="card">
+                <h2>Fotoğraf Analizi</h2>
+                <div class="info-box">
+                    📸 Fotoğrafınızın EXIF verilerini ve GPS konumunu kontrol edin
+                </div>
+                
+                <div class="form-group">
+                    <label>Fotoğraf Seçin</label>
+                    <input type="file" id="imageFile" accept="image/*" onchange="doImageAnalyze()">
+                </div>
+                
+                <div id="imageInfo"></div>
+            </div>
+        </div>
+
+        <!-- Hesap Sekmesi -->
+        <div id="account" class="tab-content">
+            <div class="card">
+                <h2>Hesap Oluştur</h2>
+                <div class="info-box">
+                    ✅ KVKK uyumlu hesap oluşturarak özelliklerden yararlanın
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Ad</label>
+                        <input type="text" id="regFirstName" placeholder="Adınız">
+                    </div>
+                    <div class="form-group">
+                        <label>Soyad</label>
+                        <input type="text" id="regLastName" placeholder="Soyadınız">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="regEmail" placeholder="ornek@email.com">
+                </div>
+
+                <button class="btn" onclick="doRegister()">Hesap Oluştur</button>
+                
+                <div id="registerResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        let currentScanData = null;
+        let selectedLinks = [];
+
+        async function doSelfScan() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value || null;
+            const full_name = `${firstName} ${lastName}`.trim();
+
+            if (!full_name) {
+                alert('Lütfen en az ad veya soyad girin!');
+                return;
+            }
+
+            document.getElementById('scanResults').innerHTML = '<div class="empty-state">⏳ Detaylı tarama yapılıyor...</div>';
+
+            try {
+                // Direkt detaylı tarama yap
+                const res = await fetch('/detailed-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name, email, confirmed_links: [] })
+                });
+                const data = await res.json();
+                
+                // Sonuçları direkt göster
+                displayDetailedResults(data);
+                
+            } catch (err) {
+                console.error('Scan error:', err);
+                document.getElementById('scanResults').innerHTML = `<div class="result" style="border-left-color:#ef4444;">
+                    <h3>❌ Bir hata oluştu</h3>
+                    <p style="margin-top:0.5rem;color:#64748b;">Hata detayı: ${err.message || 'Bilinmeyen hata'}</p>
+                    <p style="margin-top:0.5rem;font-size:0.9rem;">💡 API anahtarı kontrolü için terminale bakın</p>
+                </div>`;
+            }
+        }
+
+        function showConfirmationScreen(data) {
+            const itemsContainer = document.getElementById('confirmationItems');
+            selectedLinks = [];
+            
+            // Fotoğraflı olanları üste, fotoğrafsızları alta sırala
+            const sortedResults = data.results.sort((a, b) => {
+                const aHasPhoto = a.profile_photo ? 1 : 0;
+                const bHasPhoto = b.profile_photo ? 1 : 0;
+                return bHasPhoto - aHasPhoto; // Fotoğraflı olanlar üste
+            });
+            
+            let html = '';
+            sortedResults.forEach((item, index) => {
+                const confidence = Math.round((item.confidence || 0.5) * 100);
+                const confidenceClass = confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low';
+                const confidenceText = confidence > 80 ? 'Yüksek' : confidence > 60 ? 'Orta' : 'Düşük';
+                
+                // Profil fotoğrafı varsa büyük göster, yoksa küçük placeholder
+                const photoHtml = item.profile_photo && item.profile_photo.trim() !== "" ? 
+                    `<div style="margin-top: 0.75rem; text-align: center;">
+                        <img src="${item.profile_photo}" class="profile-photo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\'profile-placeholder\\'><span class=\\'profile-icon\\'>👤</span></div><div class=\\'profile-text\\'>Fotoğraf Yüklenemedi</div>'">
+                        <div class="profile-text">Profil Fotoğrafı</div>
+                    </div>` :
+                    `<div style="margin-top: 0.75rem; text-align: center;">
+                        <div class="profile-placeholder">
+                            <span class="profile-icon">👤</span>
+                        </div>
+                        <div class="profile-text">Fotoğraf Yok</div>
+                    </div>`;
+                
+                html += `<div class="confirmation-item" onclick="toggleSelection(${index}, '${item.link}')">
+                    <div class="confirmation-checkbox" id="checkbox-${index}">✓</div>
+                    <div class="confirmation-item-content">
+                        <div class="confirmation-item-title">${item.title || item.name}</div>
+                        <div class="confirmation-item-url">${item.link}</div>
+                        <div class="confirmation-item-meta">
+                            <span class="type-badge ${item.type}">${item.type}</span>
+                            <div class="confirmation-confidence ${confidenceClass}">
+                                <span>🎯</span>
+                                <span>Güvenilirlik: ${confidenceText} (${confidence}%)</span>
+                            </div>
+                        </div>
+                        ${item.snippet ? `<div class="confirmation-snippet">${item.snippet}</div>` : ''}
+                        ${item.location && item.location.lat ? `
+                            <div class="location-info">
+                                <strong>📍 Konum:</strong> ${item.location.address}
+                                <div class="location-coords">
+                                    ${item.location.lat}, ${item.location.lon}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${photoHtml}
+                    </div>
+                </div>`;
+            });
+            
+            itemsContainer.innerHTML = html;
+            document.getElementById('confirmationScreen').style.display = 'flex';
+        }
+
+        function toggleSelection(index, link) {
+            const checkbox = document.getElementById(`checkbox-${index}`);
+            const item = checkbox.closest('.confirmation-item');
+            
+            if (selectedLinks.includes(link)) {
+                selectedLinks = selectedLinks.filter(l => l !== link);
+                checkbox.classList.remove('checked');
+                item.classList.remove('selected');
+            } else {
+                selectedLinks.push(link);
+                checkbox.classList.add('checked');
+                item.classList.add('selected');
+            }
+        }
+
+        async function proceedWithDetailedScan() {
+            if (selectedLinks.length === 0) {
+                alert('Lütfen en az bir profil seçin!');
+                return;
+            }
+
+            document.getElementById('confirmationScreen').style.display = 'none';
+            document.getElementById('scanResults').innerHTML = '<div class="empty-state">⏳ Detaylı analiz yapılıyor...</div>';
+
+            try {
+                const res = await fetch('/detailed-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        full_name: currentScanData.query.full_name,
+                        email: currentScanData.query.email,
+                        confirmed_links: selectedLinks
+                    })
+                });
+                const data = await res.json();
+                
+                displayDetailedResults(data);
+                
+            } catch (err) {
+                console.error('Detailed scan error:', err);
+                document.getElementById('scanResults').innerHTML = `<div class="result" style="border-left-color:#ef4444;">
+                    <h3>❌ Detaylı analiz hatası</h3>
+                    <p style="margin-top:0.5rem;color:#64748b;">Hata detayı: ${err.message || 'Bilinmeyen hata'}</p>
+                </div>`;
+            }
+        }
+
+        function displayDetailedResults(data) {
+            let riskLevel = data.risk_level || 'dusuk';
+            let riskScore = data.risk_score || 0;
+            let badgeClass = riskLevel === 'dusuk' ? 'badge-success' : 
+                            riskLevel === 'orta' ? 'badge-warning' : 'badge-danger';
+            
+            let html = `<div class="result">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0;">🔍 Detaylı Analiz Sonuçları</h3>
+                    <button class="btn" onclick="startNewSearch()" style="background: #6366f1; padding: 0.5rem 1rem; font-size: 0.9rem; width: auto;">
+                        🔄 Yeni Sorgu
+                    </button>
+                </div>
+                <p style="font-size:1.1rem;margin-bottom:0.5rem;">
+                    <strong>Risk Skoru:</strong> ${riskScore}/100
+                    <span class="badge ${badgeClass}">${riskLevel.toUpperCase()}</span>
+                </p>
+                <p style="color:#64748b;margin-bottom:1rem;">Toplam ${data.results.length} detaylı sonuç bulundu</p>`;
+            
+            if (data.results.length > 0) {
+                data.results.forEach(it => {
+                    let icon = '🌐';
+                    let description = '';
+                    let typeClass = 'web';
+                    
+                    // Fırat Üniversitesi sonuçlarını özellikle vurgula
+                    const isFiratResult = it.title && (it.title.toLowerCase().includes('fırat') || it.title.toLowerCase().includes('firat'));
+                    const isFiratLink = it.link && (it.link.includes('firat.edu.tr') || it.link.includes('fu.edu.tr'));
+                    
+                    if (it.type === 'web') {
+                        icon = isFiratResult || isFiratLink ? '🏛️' : '🌐';
+                        description = 'Bu linke tıklayarak Google arama sonucundaki sayfayı ziyaret edebilirsiniz.';
+                        if (isFiratResult || isFiratLink) {
+                            description = '🏛️ <strong>Fırat Üniversitesi Profili:</strong> Bu akademik profiliniz Fırat Üniversitesi resmi sitesinde yer alıyor.';
+                        }
+                        if (it.snippet) {
+                            description += `<br><br><strong>Sayfa Özeti:</strong> ${it.snippet}`;
+                        }
+                        typeClass = 'web';
+                    } else if (it.type === 'social') {
+                        icon = '👤';
+                        description = 'Bu sosyal medya profiline tıklayarak hesabınızı kontrol edebilirsiniz.';
+                        if (it.snippet && it.snippet.toLowerCase().includes('fırat')) {
+                            description = '🏛️ <strong>Fırat Üniversitesi Bağlantısı:</strong> Bu sosyal medya profilinizde Fırat Üniversitesi ile bağlantınız görünüyor.';
+                        }
+                        if (it.snippet) {
+                            description += `<br><br><strong>Profil Özeti:</strong> ${it.snippet}`;
+                        }
+                        typeClass = 'social';
+                    } else if (it.type === 'image') {
+                        icon = '📷';
+                        description = 'Bu görsele tıklayarak Google Images\'da bulunan fotoğrafınızı görebilirsiniz.';
+                        if (it.title && (it.title.toLowerCase().includes('fırat') || it.title.toLowerCase().includes('firat'))) {
+                            description = '🏛️ <strong>Fırat Üniversitesi Fotoğrafı:</strong> Bu fotoğrafınız Fırat Üniversitesi ile ilgili görünüyor.';
+                        }
+                        typeClass = 'image';
+                    } else if (it.type === 'archive') {
+                        icon = '📚';
+                        description = 'Bu WebArchive linkinden geçmiş versiyonları görebilirsiniz.';
+                        if (it.original_url && it.original_url.includes('firat.edu.tr')) {
+                            description = '🏛️ <strong>Fırat Üniversitesi Arşivi:</strong> Bu arşiv linki Fırat Üniversitesi profilinizin geçmiş versiyonunu gösteriyor.';
+                        }
+                        typeClass = 'archive';
+                    } else if (it.type === 'breach') {
+                        icon = '⚠️';
+                        description = `Bu e-posta adresiniz "${it.name}" veri ihlalinde bulundu. Hemen şifrenizi değiştirin.`;
+                        typeClass = 'breach';
+                    }
+                    
+                    // Fırat Üniversitesi sonuçları için özel stil
+                    const specialStyle = (isFiratResult || isFiratLink) ? 'border-left: 4px solid #10b981; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);' : '';
+                    
+                    html += `<div class="result-item" style="${specialStyle}">
+                        <span class="type-badge ${typeClass}">${it.type}</span>
+                        <div style="padding-right: 80px;">
+                            ${icon} <a href="${it.link}" target="_blank">${it.title || it.name}</a>
+                            <div class="description">${description}</div>`;
+                    
+                    // Fotoğrafları daha önce göster
+                    if (it.type === 'social' && it.profile_photo) {
+                        html += `<div class="image-preview" style="margin: 1rem 0;">
+                            <img src="${it.profile_photo}" alt="Profil fotoğrafı" 
+                                 onerror="this.style.display='none'" 
+                                 style="border-radius: 50%; width: 100px; height: 100px; object-fit: cover; border: 3px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <div class="profile-text" style="margin-top: 0.5rem; font-weight: 500;">📸 Profil Fotoğrafı</div>
+                        </div>`;
+                    }
+                    
+                    if (it.type === 'image' && it.thumbnail) {
+                        html += `<div class="image-preview" style="margin: 1rem 0;">
+                            <img src="${it.thumbnail}" alt="Görsel" 
+                                 onerror="this.style.display='none'"
+                                 style="max-width: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">📷 Bulunan Görsel</div>
+                        </div>`;
+                    }
+                    
+                    if (it.location && it.location.lat && it.location.lon) {
+                        html += `<div class="location-info">
+                            <strong>📍 Konum Bilgisi:</strong><br>
+                            <div class="coordinates">${it.location.lat}, ${it.location.lon}</div>
+                            <div>${it.location.address}</div>
+                            <a href="https://www.google.com/maps?q=${it.location.lat},${it.location.lon}" target="_blank" class="map-link">🗺️ Haritada Gör</a>
+                        </div>`;
+                    }
+                    
+                    html += `</div></div>`;
+                });
+            } else {
+                html += '<div class="empty-state">✅ Detaylı analizde ek sonuç bulunamadı</div>';
+            }
+            html += '</div>';
+            document.getElementById('scanResults').innerHTML = html;
+        }
+
+        function closeConfirmation() {
+            document.getElementById('confirmationScreen').style.display = 'none';
+            document.getElementById('scanResults').innerHTML = '<div class="empty-state">Tarama iptal edildi</div>';
+        }
+
+        function startNewSearch() {
+            // Form alanlarını temizle
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('email').value = '';
+            
+            // Sonuçları temizle
+            document.getElementById('scanResults').innerHTML = '';
+            
+            // Onaylama ekranını gizle
+            document.getElementById('confirmationScreen').style.display = 'none';
+            
+            // Global değişkenleri sıfırla
+            currentScanData = null;
+            selectedLinks = [];
+            
+            // Form alanına odaklan
+            document.getElementById('firstName').focus();
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark Mode';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light Mode';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Sayfa yüklendiğinde tema ayarını yükle
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                document.getElementById('theme-icon').textContent = '☀️';
+                document.getElementById('theme-text').textContent = 'Light Mode';
+            }
+        });
+
+        async function doImageAnalyze() {
+            const file = document.getElementById('imageFile').files[0];
+            if (!file) return;
+            
+            document.getElementById('imageInfo').innerHTML = '<div class="empty-state">⏳ Analiz ediliyor...</div>';
+            
+            try {
+                const form = new FormData();
+                form.append('file', file);
+                
+                const res = await fetch('/analyze-image', { method: 'POST', body: form });
+                const data = await res.json();
+                
+                let html = `<div class="result">
+                    <h3 style="margin-bottom:1rem;">📊 Analiz Sonucu</h3>
+                    <div class="result-item">
+                        <strong>pHash:</strong> <code style="font-family:monospace;font-size:0.9rem;">${data.phash}</code>
+                    </div>`;
+                
+                if (data.exif?.gps?.lat && data.exif?.gps?.lon) {
+                    html += `<div class="result-item">
+                        <strong>📍 GPS Konum:</strong> ${data.exif.gps.lat.toFixed(6)}, ${data.exif.gps.lon.toFixed(6)}
+                        <br><a href="https://www.google.com/maps?q=${data.exif.gps.lat},${data.exif.gps.lon}" target="_blank" style="font-size:0.9rem;">Haritada Gör →</a>
+                    </div>`;
+                } else {
+                    html += '<div class="result-item">✅ GPS Verisi: Bulunamadı (Güvenli)</div>';
+                }
+                
+                html += `<div class="result-item">
+                    <strong>EXIF Verileri:</strong> ${data.exif?.has_exif ? '⚠️ Mevcut' : '✅ Temiz'}
+                </div></div>`;
+                
+                document.getElementById('imageInfo').innerHTML = html;
+            } catch (err) {
+                document.getElementById('imageInfo').innerHTML = '<div class="result" style="border-left-color:#ef4444;">❌ Görsel analiz edilemedi.</div>';
+            }
+        }
+
+        async function doRegister() {
+            const firstName = document.getElementById('regFirstName').value;
+            const lastName = document.getElementById('regLastName').value;
+            const email = document.getElementById('regEmail').value;
+            const full_name = `${firstName} ${lastName}`.trim();
+
+            if (!full_name || !email) {
+                alert('Tüm alanları doldurun!');
+                return;
+            }
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name, email, consent: true })
+                });
+                const data = await res.json();
+                
+                document.getElementById('registerResult').innerHTML = `
+                    <div class="result">
+                        <h3>✅ Hesap Oluşturuldu!</h3>
+                        <p style="margin-top:1rem;color:#64748b;">Doğrulama kodu (demo için gösteriliyor):</p>
+                        <code style="display:block;padding:1rem;background:#1e293b;color:#22c55e;border-radius:6px;margin-top:0.5rem;word-break:break-all;font-size:0.85rem;">${data.message}</code>
+                    </div>`;
+            } catch (err) {
+                document.getElementById('registerResult').innerHTML = '<div class="result" style="border-left-color:#ef4444;">❌ Kayıt başarısız.</div>';
+            }
+        }
+    </script>
+</body>
+</html>

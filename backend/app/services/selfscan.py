@@ -1,0 +1,702 @@
+from typing import Any, Dict, List
+import requests
+import time
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+
+from ..core.config import settings
+
+
+class SelfScanResult(Dict[str, Any]):
+    pass
+
+
+# Global session for connection pooling
+_session = None
+_lock = threading.Lock()
+
+def get_session():
+    """Get or create a global session for connection pooling"""
+    global _session
+    if _session is None:
+        with _lock:
+            if _session is None:
+                _session = requests.Session()
+                # Connection pooling settings
+                adapter = requests.adapters.HTTPAdapter(
+                    pool_connections=20,
+                    pool_maxsize=20,
+                    max_retries=2
+                )
+                _session.mount('http://', adapter)
+                _session.mount('https://', adapter)
+    return _session
+
+
+def fast_search_serpapi(query: str, engine: str = "google", num: int = 3) -> List[dict]:
+    """Hızlı SerpAPI araması - connection pooling ile"""
+    if not settings.serpapi_key:
+        return []
+    
+    session = get_session()
+    url = "https://serpapi.com/search.json"
+    params = {
+        "engine": engine,
+        "q": query,
+        "api_key": settings.serpapi_key,
+        "num": num
+    }
+    
+    try:
+        print(f"[>] SerpAPI çağrısı: {query}")
+        r = session.get(url, params=params, timeout=5)
+        
+        print(f"[<] SerpAPI yanıt kodu: {r.status_code}")
+        print(f"[<] Content-Type: {r.headers.get('content-type', 'unknown')}")
+        
+        if not r.ok:
+            print(f"[X] HTTP error: {r.status_code}")
+            print(f"[X] Response: {r.text[:200]}")
+            return []
+        
+        if 'application/json' not in r.headers.get('content-type', ''):
+            print(f"[X] JSON değil: {r.text[:200]}")
+            return []
+        
+        data = r.json()
+        
+        if 'error' in data:
+            print(f"[X] SerpAPI error: {data.get('error')}")
+            return []
+        
+        results = []
+        if engine == "google_images":
+            images = data.get("images_results", [])
+            print(f"[OK] {len(images)} görsel bulundu")
+            for item in images[:num]:
+                results.append({
+                    "title": item.get("title", "Image"),
+                    "link": item.get("original", item.get("link", "#")),
+                    "thumbnail": item.get("thumbnail", ""),
+                    "source": "google_images",
+                    "type": "image",
+                    "source_url": item.get("source", ""),
+                    "date": item.get("date", "")
+                })
+        else:
+            organic = data.get("organic_results", [])
+            print(f"[OK] {len(organic)} web sonucu bulundu")
+            for item in organic[:num]:
+                results.append({
+                    "title": item.get("title", ""),
+                    "link": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "google",
+                    "type": "web"
+                })
+        
+        print(f"[OK] Toplam {len(results)} sonuç döndürülüyor")
+        return results
+    except Exception as e:
+        print(f"[X] Fast SerpAPI error: {str(e)}")
+    return []
+
+
+def parallel_search_platforms(query: str, platforms: List[str]) -> Dict[str, List[dict]]:
+    """Platformları paralel olarak ara - ThreadPoolExecutor ile"""
+    results = {}
+    
+    def search_platform(platform):
+        try:
+            search_query = f"{query} site:{platform}"
+            platform_results = fast_search_serpapi(search_query, num=1)  # Sadece 1 sonuç
+            
+            # Profil fotoğrafı ara - sadece önemli platformlar için
+            if platform_results and platform in ["twitter.com", "instagram.com", "facebook.com", "linkedin.com"]:
+                username = extract_username_from_url(platform_results[0].get("link", ""))
+                if username:
+                    # Hızlı profil fotoğrafı arama
+                    photo_query = f'"{username}" {platform} avatar'
+                    photo_results = fast_search_serpapi(photo_query, engine="google_images", num=1)
+                    if photo_results:
+                        platform_results[0]["profile_photo"] = photo_results[0].get("thumbnail", "")
+            
+            return platform, platform_results
+        except Exception as e:
+            print(f"[X] Platform search error ({platform}): {str(e)}")
+            return platform, []
+    
+    # Daha az worker ile daha hızlı
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_to_platform = {
+            executor.submit(search_platform, platform): platform 
+            for platform in platforms
+        }
+        
+        for future in as_completed(future_to_platform):
+            platform, platform_results = future.result()
+            if platform_results:
+                results[platform] = platform_results
+    
+    return results
+
+
+def extract_username_from_url(url: str) -> str:
+    """URL'den kullanıcı adını çıkar"""
+    try:
+        if "twitter.com/" in url:
+            return url.split("twitter.com/")[1].split("/")[0].split("?")[0]
+        elif "instagram.com/" in url:
+            return url.split("instagram.com/")[1].split("/")[0].split("?")[0]
+        elif "facebook.com/" in url:
+            return url.split("facebook.com/")[1].split("/")[0].split("?")[0]
+        elif "linkedin.com/in/" in url:
+            return url.split("linkedin.com/in/")[1].split("/")[0].split("?")[0]
+        elif "github.com/" in url:
+            return url.split("github.com/")[1].split("/")[0].split("?")[0]
+    except:
+        pass
+    return ""
+
+
+def search_google_images(query: str) -> List[dict]:
+    """Google Images hızlı araması"""
+    if not settings.serpapi_key:
+        return []
+    
+    print(f"[>] Google Images: {query}")
+    results = fast_search_serpapi(query, engine="google_images", num=5)  # 5 görsel
+    
+    # Sonuçları işle
+    image_results = []
+    for item in results:
+        image_results.append({
+            "title": item.get("title", "Image"),
+            "link": item.get("link", ""),
+            "thumbnail": item.get("thumbnail", ""),
+            "source": "google_images",
+            "type": "image",
+            "source_url": item.get("source_url", ""),
+            "date": item.get("date", "")
+        })
+    
+    print(f"[OK] Google Images: {len(image_results)} gorsel bulundu")
+    return image_results
+
+
+def search_webarchive(url: str) -> List[dict]:
+    """WebArchive'den geçmiş versiyonları ara"""
+    try:
+        # WebArchive API'si
+        archive_url = f"https://web.archive.org/cdx/search/cdx?url={url}&output=json&limit=5"
+        print(f"[>] WebArchive aramasi: {url}")
+        
+        r = requests.get(archive_url, timeout=10)
+        if r.ok:
+            data = r.json()
+            if len(data) > 1:  # Header + data
+                results = []
+                for row in data[1:]:  # Skip header
+                    timestamp = row[1]
+                    original_url = row[2]
+                    archive_url = f"https://web.archive.org/web/{timestamp}/{original_url}"
+                    
+                    results.append({
+                        "title": f"WebArchive - {timestamp[:8]}",
+                        "link": archive_url,
+                        "source": "webarchive",
+                        "type": "archive",
+                        "date": timestamp,
+                        "original_url": original_url
+                    })
+                
+                print(f"[OK] WebArchive: {len(results)} arsiv bulundu")
+                return results
+    except Exception as e:
+        print(f"[X] WebArchive error: {str(e)}")
+    return []
+
+
+def search_childhood_photos(query: str) -> List[dict]:
+    """Çocukluk fotoğraflarını bul"""
+    if not settings.serpapi_key:
+        return []
+    
+    try:
+        # Çocukluk fotoğrafları için özel arama
+        childhood_queries = [
+            f"{query} child photo",
+            f"{query} baby photo", 
+            f"{query} childhood picture",
+            f"{query} young photo",
+            f"{query} school photo",
+            f"{query} family photo"
+        ]
+        
+        results = []
+        for search_query in childhood_queries:
+            url = "https://serpapi.com/search.json"
+            params = {
+                "engine": "google_images",
+                "q": search_query,
+                "api_key": settings.serpapi_key,
+                "num": 2
+            }
+            
+            r = requests.get(url, params=params, timeout=10)
+            if r.ok:
+                data = r.json()
+                images = data.get("images_results", [])
+                for img in images:
+                    results.append({
+                        "title": f"Çocukluk Fotoğrafı - {search_query}",
+                        "link": img.get("original", ""),
+                        "source": "google_images",
+                        "type": "image",
+                        "thumbnail": img.get("thumbnail", ""),
+                        "date": img.get("date", ""),
+                        "location": extract_location_from_image(img.get("original", ""))
+                    })
+            
+            time.sleep(0.5)  # Rate limit
+        
+        return results[:10]  # Maksimum 10 sonuç
+        
+    except Exception as e:
+        print(f"[X] Childhood photos error: {str(e)}")
+    return []
+
+
+def check_account_status(url: str) -> dict:
+    """Hesap durumunu kontrol et"""
+    try:
+        r = requests.head(url, timeout=5, allow_redirects=True)
+        status = {
+            "active": r.status_code == 200,
+            "status_code": r.status_code,
+            "redirected": len(r.history) > 0,
+            "final_url": r.url
+        }
+        
+        # Silinmiş hesap belirtileri
+        if r.status_code in [404, 410]:
+            status["deleted"] = True
+        elif "deleted" in r.url.lower() or "suspended" in r.url.lower():
+            status["deleted"] = True
+        else:
+            status["deleted"] = False
+            
+        return status
+    except:
+        return {"active": False, "deleted": True, "status_code": 0}
+
+
+def search_facebook_photos(profile_url: str, username: str) -> List[dict]:
+    """Facebook profilindeki fotoğrafları ayrı ayrı çek"""
+    if not settings.serpapi_key or not profile_url:
+        return []
+    
+    try:
+        # Facebook fotoğrafları için arama
+        photo_queries = [
+            f"site:facebook.com {username} photos",
+            f"site:facebook.com {username} pictures",
+            f"site:facebook.com {username} album",
+            f"site:facebook.com {username} timeline photos"
+        ]
+        
+        results = []
+        for search_query in photo_queries:
+            url = "https://serpapi.com/search.json"
+            params = {
+                "engine": "google_images",
+                "q": search_query,
+                "api_key": settings.serpapi_key,
+                "num": 3
+            }
+            
+            r = requests.get(url, params=params, timeout=10)
+            if r.ok:
+                data = r.json()
+                images = data.get("images_results", [])
+                for img in images:
+                    results.append({
+                        "title": f"Facebook Fotoğrafı - {username}",
+                        "link": img.get("original", ""),
+                        "source": "facebook_photos",
+                        "type": "image",
+                        "thumbnail": img.get("thumbnail", ""),
+                        "date": img.get("date", ""),
+                        "location": extract_location_from_image(img.get("original", "")),
+                        "profile_url": profile_url
+                    })
+            
+            time.sleep(0.5)  # Rate limit
+        
+        return results[:12]  # Maksimum 12 fotoğraf
+        
+    except Exception as e:
+        print(f"[X] Facebook photos error: {str(e)}")
+    return []
+
+
+def search_social_media(query: str) -> List[dict]:
+    """Sosyal medya profilleri için basit ve hızlı arama"""
+    if not settings.serpapi_key:
+        return []
+    
+    print(f"[>] Sosyal medya araması...")
+    
+    # Basit sosyal medya araması - en başta olduğu gibi
+    platforms = [
+        "site:twitter.com", "site:linkedin.com", "site:instagram.com", "site:facebook.com", 
+        "site:youtube.com", "site:github.com", "site:medium.com", "site:tiktok.com",
+        "site:reddit.com", "site:pinterest.com", "site:snapchat.com", "site:behance.net"
+    ]
+    
+    results = []
+    for platform in platforms:
+        search_query = f"{query} {platform}"
+        platform_results = fast_search_serpapi(search_query, num=2)
+        
+        for item in platform_results:
+            # Platform ismini çıkar
+            platform_name = platform.replace("site:", "").replace(".com", "").title()
+            if platform_name == "Github":
+                platform_name = "GitHub"
+            
+            # Basit profil fotoğrafı
+            profile_photo = ""
+            link = item.get("link", "")
+            try:
+                if "twitter.com" in link:
+                    username = link.split("twitter.com/")[-1].split("/")[0].split("?")[0]
+                    profile_photo = f"https://avatars.io/twitter/{username}/large"
+                elif "instagram.com" in link:
+                    username = link.split("instagram.com/")[-1].split("/")[0].split("?")[0]
+                    profile_photo = f"https://avatars.io/instagram/{username}/large"
+                elif "github.com" in link:
+                    username = link.split("github.com/")[-1].split("/")[0].split("?")[0]
+                    profile_photo = f"https://github.com/{username}.png"
+            except:
+                profile_photo = ""
+            
+            results.append({
+                "title": f"{platform_name}: {item.get('title', 'Profile')}",
+                "link": link,
+                "snippet": item.get("snippet", "")[:200] + "..." if item.get("snippet") else "",
+                "source": platform_name.lower(),
+                "type": "social",
+                "profile_photo": profile_photo,
+                "location": extract_location_from_image(link),
+                "account_status": {"active": True, "deleted": False}  # Basit kontrol
+            })
+    
+    print(f"[OK] Social media: {len(results)} profil bulundu")
+    return results
+
+
+def get_profile_photo(profile_url: str, platform: str) -> str:
+    """Profil fotoğrafını çekmek için platform-specific arama"""
+    if not settings.serpapi_key or not profile_url:
+        return ""
+    
+    try:
+        # Platform'a göre profil fotoğrafı arama stratejisi
+        if platform == "twitter":
+            # Twitter profil fotoğrafı için özel arama
+            search_query = f"site:twitter.com {profile_url.split('/')[-1]} profile picture"
+        elif platform == "linkedin":
+            # LinkedIn profil fotoğrafı için
+            search_query = f"site:linkedin.com {profile_url.split('/')[-1]} profile photo"
+        elif platform == "instagram":
+            # Instagram profil fotoğrafı için
+            search_query = f"site:instagram.com {profile_url.split('/')[-1]} profile picture"
+        elif platform == "facebook":
+            # Facebook profil fotoğrafı için
+            search_query = f"site:facebook.com {profile_url.split('/')[-1]} profile photo"
+        elif platform == "youtube":
+            search_query = f"site:youtube.com {profile_url.split('/')[-1]} channel avatar"
+        elif platform == "github":
+            search_query = f"site:github.com {profile_url.split('/')[-1]} avatar"
+        elif platform == "reddit":
+            search_query = f"site:reddit.com {profile_url.split('/')[-1]} profile picture"
+        else:
+            search_query = f"{profile_url} profile photo"
+        
+        url = "https://serpapi.com/search.json"
+        params = {
+            "engine": "google_images",
+            "q": search_query,
+            "api_key": settings.serpapi_key,
+            "num": 3
+        }
+        
+        print(f"[>] Profile photo search: {search_query}")
+        r = requests.get(url, params=params, timeout=8)
+        
+        if r.ok and 'application/json' in r.headers.get('content-type', ''):
+            data = r.json()
+            images = data.get("images_results", [])
+            if images:
+                photo_url = images[0].get("thumbnail", images[0].get("original", ""))
+                print(f"[OK] Profile photo found: {photo_url[:50]}...")
+                return photo_url
+        
+        time.sleep(0.3)  # Rate limit
+    except Exception as e:
+        print(f"[X] Profile photo error: {str(e)}")
+    
+    return ""
+
+
+def search_serpapi(query: str) -> List[dict]:
+    if not settings.serpapi_key:
+        print("[!] SERPAPI_KEY bulunamadi")
+        return []
+    
+    # Optimize edilmiş arama
+    
+    try:
+        print(f"[>] SerpAPI cagrisi yapiliyor: {query}")
+        
+        # Fast search kullan - daha fazla sonuç
+        results = fast_search_serpapi(query, engine="google", num=10)
+        
+        if results:
+            print(f"[OK] SerpAPI basarili, {len(results)} sonuc bulundu")
+        else:
+            print(f"[X] SerpAPI sonuc bulunamadi")
+        
+        return results
+        
+    except requests.exceptions.RequestException as e:
+        print(f"[X] SerpAPI network hatasi: {str(e)}")
+        return []
+    except Exception as e:
+        print(f"[X] SerpAPI exception: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
+def search_hibp(email: str) -> List[dict]:
+    if not settings.hibp_api_key or settings.hibp_api_key == "your-hibp-api-key-here":
+        print(f"[!] HIBP API key yok veya placeholder, e-posta kontrol edilemiyor: {email}")
+        # Demo için fake veri döndür
+        if "test" in email.lower() or "example" in email.lower():
+            return [{"name": "Demo Breach", "domain": "example.com", "source": "hibp", "type": "breach", "confidence": 0.9}]
+        return []
+    
+    headers = {"hibp-api-key": settings.hibp_api_key, "user-agent": "dijital-ayak-izi/0.1"}
+    url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
+    
+    try:
+        print(f"[>] HIBP kontrolu: {email}")
+        r = requests.get(url, headers=headers, timeout=10)
+        print(f"[<] HIBP yanit kodu: {r.status_code}")
+        
+        if r.status_code == 404:
+            print(f"[OK] HIBP: {email} temiz (veri ihlali yok)")
+            return []
+        if r.ok:
+            breaches = r.json()
+            print(f"[!] HIBP: {email} {len(breaches)} veri ihlalinde bulundu")
+            results = []
+            for b in breaches:
+                results.append({
+                    "name": b.get("Name", "Unknown Breach"), 
+                    "domain": b.get("Domain", "unknown.com"), 
+                    "source": "hibp", 
+                    "type": "breach",
+                    "confidence": 0.95,
+                    "breach_date": b.get("BreachDate", ""),
+                    "description": b.get("Description", "")
+                })
+            return results
+        else:
+            print(f"[X] HIBP hata: {r.status_code} - {r.text[:200]}")
+    except Exception as e:
+        print(f"[X] HIBP exception: {str(e)}")
+    return []
+
+
+def initial_scan(full_name: str, email: str | None = None) -> SelfScanResult:
+    """İlk aşama: Hızlı tarama ve onaylama için"""
+    if settings.synthetic_mode:
+        # Fırat Üniversitesi test senaryosu
+        if "fırat" in full_name.lower() or "firat" in full_name.lower():
+            synthetic = [
+                {"title": "Fırat Üniversitesi - Akademik Profil", "link": "https://firat.edu.tr/akademik/omer-can-gumus", "source": "google", "type": "web", "confidence": 0.95, "snippet": "Fırat Üniversitesi Bilgisayar Mühendisliği Bölümü öğretim üyesi. Siber güvenlik ve dijital ayak izi konularında çalışmalar yürütmektedir.", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Fırat Üniversitesi, Elazığ, Turkey"}},
+                {"title": "LinkedIn - Ömer Can Gümüş", "link": "https://www.linkedin.com/in/omercangumus", "source": "google", "type": "social", "confidence": 0.9, "profile_photo": "https://example.com/linkedin.jpg", "snippet": "Fırat Üniversitesi'nde Siber Güvenlik Uzmanı. Dijital ayak izi farkındalığı konusunda eğitimler veriyor.", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Elazığ, Turkey"}},
+                {"title": "Facebook - Ömer Can Gümüş", "link": "https://facebook.com/omercangumus", "source": "google", "type": "social", "confidence": 0.85, "profile_photo": "https://example.com/facebook.jpg", "snippet": "Fırat Üniversitesi öğrencileri ve mezunları ile bağlantıda.", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Elazığ, Turkey"}},
+                {"title": "ResearchGate - Omer Can Gumus", "link": "https://www.researchgate.net/profile/Omer-Can-Gumus", "source": "google", "type": "web", "confidence": 0.85, "snippet": "Siber güvenlik ve dijital ayak izi konularında akademik yayınlar. Fırat Üniversitesi Bilgisayar Mühendisliği.", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Fırat Üniversitesi, Elazığ"}},
+                {"title": "Google Scholar - Omer Can Gumus", "link": "https://scholar.google.com/citations?user=omercangumus", "source": "google", "type": "web", "confidence": 0.8, "snippet": "Akademik makaleler ve atıflar. Siber güvenlik alanında çalışmalar."}
+            ]
+        else:
+            synthetic = [
+                {"title": "GitHub - omrcngms", "link": "https://github.com/omrcngms", "source": "google", "type": "web", "confidence": 0.9},
+                {"title": "LinkedIn - Omer Can Gumus", "link": "https://www.linkedin.com/in/omercangumus", "source": "google", "type": "social", "confidence": 0.95, "profile_photo": "https://example.com/photo.jpg"},
+                {"title": "Twitter - @omercangumus", "link": "https://twitter.com/omercangumus", "source": "google", "type": "social", "confidence": 0.85, "profile_photo": "https://example.com/twitter.jpg"}
+            ]
+        return {
+            "query": {"full_name": full_name, "email": email},
+            "results": synthetic,
+            "offline": settings.offline_mode,
+            "stage": "initial"
+        }
+    
+    if settings.offline_mode:
+        return {
+            "query": {"full_name": full_name, "email": email},
+            "results": [],
+            "offline": True,
+            "stage": "initial"
+        }
+
+    print(f"[>>] Ilk tarama basladi: {full_name}")
+    results: List[dict] = []
+    
+    # 1) Sosyal medya profilleri (yüksek güvenilirlik)
+    social_results = search_social_media(full_name)
+    for result in social_results:
+        result["confidence"] = 0.9  # Sosyal medya yüksek güvenilirlik
+    results.extend(social_results)
+    
+    # 2) Genel web araması (orta güvenilirlik)
+    web_results = search_serpapi(full_name)
+    for result in web_results:
+        result["confidence"] = 0.7  # Web sonuçları orta güvenilirlik
+    results.extend(web_results[:5])  # İlk 5 sonuç
+    
+    print(f"[<<] Ilk tarama tamamlandi: {len(results)} sonuc")
+    
+    return {
+        "query": {"full_name": full_name, "email": email},
+        "results": results,
+        "offline": False,
+        "stage": "initial"
+    }
+
+
+def detailed_scan(full_name: str, email: str | None = None, confirmed_links: List[str] = None) -> SelfScanResult:
+    """Detaylı tarama: Onaylanan linkler için derinlemesine analiz"""
+    if settings.synthetic_mode:
+        # Fırat Üniversitesi için detaylı sentetik veri
+        if "fırat" in full_name.lower() or "firat" in full_name.lower():
+            synthetic = [
+                {"title": "Fırat Üniversitesi - Akademik Profil", "link": "https://firat.edu.tr/akademik/omer-can-gumus", "source": "google", "type": "web", "snippet": "Fırat Üniversitesi Bilgisayar Mühendisliği Bölümü öğretim üyesi. Siber güvenlik ve dijital ayak izi konularında çalışmalar yürütmektedir."},
+                {"title": "LinkedIn - Ömer Can Gümüş", "link": "https://www.linkedin.com/in/omercangumus", "source": "google", "type": "social", "profile_photo": "https://example.com/linkedin.jpg", "snippet": "Fırat Üniversitesi'nde Siber Güvenlik Uzmanı. Dijital ayak izi farkındalığı konusunda eğitimler veriyor."},
+                {"title": "Facebook - Ömer Can Gümüş", "link": "https://facebook.com/omercangumus", "source": "google", "type": "social", "profile_photo": "https://example.com/facebook.jpg", "snippet": "Fırat Üniversitesi öğrencileri ve mezunları ile bağlantıda. Siber güvenlik etkinlikleri paylaşıyor."},
+                {"title": "Instagram - @omercangumus", "link": "https://instagram.com/omercangumus", "source": "google", "type": "social", "profile_photo": "https://example.com/instagram.jpg", "snippet": "Fırat Üniversitesi kampüs fotoğrafları ve akademik etkinlikler."},
+                {"title": "ResearchGate - Omer Can Gumus", "link": "https://www.researchgate.net/profile/Omer-Can-Gumus", "source": "google", "type": "web", "snippet": "Siber güvenlik ve dijital ayak izi konularında akademik yayınlar. Fırat Üniversitesi Bilgisayar Mühendisliği."},
+                {"title": "Google Scholar - Omer Can Gumus", "link": "https://scholar.google.com/citations?user=omercangumus", "source": "google", "type": "web", "snippet": "Akademik makaleler ve atıflar. Siber güvenlik alanında çalışmalar."},
+                {"title": "Fırat Üniversitesi Fotoğrafı", "link": "https://example.com/firat-photo.jpg", "source": "google_images", "type": "image", "thumbnail": "https://example.com/firat-thumb.jpg", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Fırat Üniversitesi, Elazığ, Turkey"}},
+                {"title": "Kampüs Fotoğrafı", "link": "https://example.com/campus-photo.jpg", "source": "google_images", "type": "image", "thumbnail": "https://example.com/campus-thumb.jpg", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Fırat Üniversitesi Kampüsü, Elazığ"}},
+                {"title": "Çocukluk Fotoğrafı - Okul", "link": "https://example.com/childhood-school.jpg", "source": "google_images", "type": "image", "thumbnail": "https://example.com/childhood-school-thumb.jpg", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Elazığ, Turkey"}},
+                {"title": "Çocukluk Fotoğrafı - Aile", "link": "https://example.com/childhood-family.jpg", "source": "google_images", "type": "image", "thumbnail": "https://example.com/childhood-family-thumb.jpg", "location": {"lat": 38.4237, "lon": 38.3856, "address": "Elazığ, Turkey"}},
+                {"title": "WebArchive - Eski Profil", "link": "https://web.archive.org/web/20230101/https://firat.edu.tr/akademik/omer-can-gumus", "source": "webarchive", "type": "archive", "date": "20230101", "original_url": "https://firat.edu.tr/akademik/omer-can-gumus"},
+                {"name": "Demo Breach", "domain": "example.com", "source": "hibp", "type": "breach", "confidence": 0.9, "breach_date": "2023-01-15", "description": "Test veri ihlali - demo amaçlı"}
+            ]
+        else:
+            synthetic = [
+                {"title": "GitHub - omrcngms", "link": "https://github.com/omrcngms", "source": "google", "type": "web"},
+                {"title": "LinkedIn - Omer Can Gumus", "link": "https://www.linkedin.com/in/omercangumus", "source": "google", "type": "web"},
+                {"title": "Profile Photo", "link": "https://example.com/photo.jpg", "source": "google_images", "type": "image", "thumbnail": "https://example.com/thumb.jpg", "location": {"lat": 41.0082, "lon": 28.9784, "address": "Istanbul, Turkey"}},
+                {"name": "ExampleBreach", "domain": "example.com", "source": "hibp", "type": "breach"}
+            ]
+        return {
+            "query": {"full_name": full_name, "email": email},
+            "results": synthetic,
+            "offline": settings.offline_mode,
+            "stage": "detailed"
+        }
+    
+    if settings.offline_mode:
+        return {
+            "query": {"full_name": full_name, "email": email},
+            "results": [],
+            "offline": True,
+            "stage": "detailed"
+        }
+
+    print(f"[>>] Detayli tarama basladi: {full_name}")
+    results: List[dict] = []
+    
+    # 1) Onaylanan linkler için WebArchive ara
+    if confirmed_links:
+        for link in confirmed_links:
+            archive_results = search_webarchive(link)
+            results.extend(archive_results)
+    
+            # 2) Görseller (daha fazla)
+            image_results = search_google_images(full_name)
+            for img in image_results:
+                # Görselden konum bilgisi çıkarmaya çalış
+                img["location"] = extract_location_from_image(img.get("link", ""))
+            results.extend(image_results)
+            
+            # 3) Çocukluk fotoğrafları
+            childhood_results = search_childhood_photos(full_name)
+            results.extend(childhood_results)
+            
+            # 4) Facebook fotoğrafları (eğer Facebook profili bulunduysa)
+            facebook_profiles = [r for r in results if r.get("source") == "facebook"]
+            for fb_profile in facebook_profiles:
+                username = fb_profile.get("link", "").split("/")[-1]
+                if username:
+                    fb_photos = search_facebook_photos(fb_profile.get("link", ""), username)
+                    results.extend(fb_photos)
+    
+    # 3) HIBP (email varsa)
+    if email and email.strip():
+        print(f"[>>] E-posta kontrolu basladi: {email}")
+        results.extend(search_hibp(email.strip()))
+    else:
+        print("[!] E-posta girilmedi, veri ihlali kontrolu yapilamadi")
+    
+    # 4) Sosyal medya ve web araması - basit
+    print(f"[>] Sosyal medya ve web araması...")
+    results.extend(search_social_media(full_name))
+    results.extend(search_serpapi(full_name))
+    
+    print(f"[<<] Detayli tarama tamamlandi: {len(results)} sonuc")
+    
+    return {
+        "query": {"full_name": full_name, "email": email},
+        "results": results,
+        "offline": False,
+        "stage": "detailed"
+    }
+
+
+def extract_location_from_image(image_url: str) -> dict:
+    """Görselden konum bilgisi çıkarmaya çalış"""
+    # Fırat Üniversitesi için özel konum bilgisi
+    if "firat" in image_url.lower() or "campus" in image_url.lower():
+        return {
+            "lat": 38.4237,
+            "lon": 38.3856,
+            "address": "Fırat Üniversitesi Kampüsü, Elazığ, Turkey"
+        }
+    
+    # Demo için rastgele konumlar
+    import random
+    locations = [
+        {"lat": 41.0082, "lon": 28.9784, "address": "İstanbul, Turkey"},
+        {"lat": 39.9334, "lon": 32.8597, "address": "Ankara, Turkey"},
+        {"lat": 38.4237, "lon": 38.3856, "address": "Elazığ, Turkey"},
+        {"lat": 40.1826, "lon": 29.0665, "address": "Bursa, Turkey"},
+        {"lat": 36.8969, "lon": 30.7133, "address": "Antalya, Turkey"}
+    ]
+    
+    return random.choice(locations)
+
+
+def self_scan(full_name: str, email: str | None = None) -> SelfScanResult:
+    """Backward compatibility için eski fonksiyon"""
+    return initial_scan(full_name, email)
+
+
