@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijital Ayak İzi - Platform Arama</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .platform-selector {
+            margin-bottom: 30px;
+        }
+        
+        .platform-selector h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .platform-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            text-align: center;
+        }
+        
+        .platform-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .platform-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+        
+        .platform-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .platform-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .search-form {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .search-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            width: 100%;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .result-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            background: #f0f4ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .result-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .result-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .platform-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #efe;
+            color: #363;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Dijital Ayak İzi</h1>
+            <p>Platform bazlı kişi arama ve güvenlik analizi</p>
+        </div>
+        
+        <div class="content">
+            <div class="platform-selector">
+                <h2>🎯 Platform Seçin</h2>
+                <div class="platform-grid" id="platformGrid">
+                    <div class="platform-card" data-platform="twitter">
+                        <div class="platform-icon">🐦</div>
+                        <div class="platform-name">Twitter</div>
+                    </div>
+                    <div class="platform-card" data-platform="linkedin">
+                        <div class="platform-icon">💼</div>
+                        <div class="platform-name">LinkedIn</div>
+                    </div>
+                    <div class="platform-card" data-platform="instagram">
+                        <div class="platform-icon">📸</div>
+                        <div class="platform-name">Instagram</div>
+                    </div>
+                    <div class="platform-card" data-platform="facebook">
+                        <div class="platform-icon">👥</div>
+                        <div class="platform-name">Facebook</div>
+                    </div>
+                    <div class="platform-card" data-platform="youtube">
+                        <div class="platform-icon">📺</div>
+                        <div class="platform-name">YouTube</div>
+                    </div>
+                    <div class="platform-card" data-platform="github">
+                        <div class="platform-icon">💻</div>
+                        <div class="platform-name">GitHub</div>
+                    </div>
+                </div>
+            </div>
+            
+        <div class="search-form">
+            <h3>🎯 1. Platform Profil Doğrulama</h3>
+            <div class="form-group">
+                <label for="profileUrl">🔗 Profil URL'si</label>
+                <input type="url" id="profileUrl" placeholder="Örn: https://facebook.com/ahmet.yilmaz" required>
+            </div>
+            
+            <button class="search-btn" id="verifyBtn" onclick="verifyProfile()">
+                ✅ Profili Doğrula
+            </button>
+            
+            <div id="verificationResult"></div>
+        </div>
+        
+        <div class="search-form" id="advancedSearchForm" style="display: none;">
+            <h3>🔍 2. Gelişmiş Arama</h3>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="includeImageAnalysis" checked>
+                    📸 Resim Analizi (Google Lens benzeri)
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="searchDepth">🎯 Arama Derinliği</label>
+                <select id="searchDepth">
+                    <option value="basic">Temel</option>
+                    <option value="medium">Orta</option>
+                    <option value="deep" selected>Derin</option>
+                </select>
+            </div>
+            
+            <button class="search-btn" id="advancedSearchBtn" onclick="performAdvancedSearch()">
+                🚀 Gelişmiş Arama Başlat
+            </button>
+        </div>
+            
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPlatform = null;
+        
+        // Platform seçimi
+        document.querySelectorAll('.platform-card').forEach(card => {
+            card.addEventListener('click', () => {
+                // Önceki seçimi temizle
+                document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('selected'));
+                
+                // Yeni seçimi işaretle
+                card.classList.add('selected');
+                selectedPlatform = card.dataset.platform;
+                
+                console.log('Seçilen platform:', selectedPlatform);
+            });
+        });
+        
+        let verifiedProfile = null;
+        
+        async function verifyProfile() {
+            const profileUrl = document.getElementById('profileUrl').value;
+            const verificationResult = document.getElementById('verificationResult');
+            
+            if (!selectedPlatform) {
+                showError('Lütfen bir platform seçin!');
+                return;
+            }
+            
+            if (!profileUrl.trim()) {
+                showError('Lütfen profil URL\'si girin!');
+                return;
+            }
+            
+            // Loading göster
+            verificationResult.innerHTML = '<div class="loading">✅ Profil doğrulanıyor...</div>';
+            
+            try {
+                const response = await fetch('/api/verify-platform-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        platform: selectedPlatform,
+                        profile_url: profileUrl
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                verifiedProfile = data.verified_profile;
+                
+                verificationResult.innerHTML = `
+                    <div class="success">
+                        ✅ Profil başarıyla doğrulandı!<br>
+                        <strong>${verifiedProfile.display_name}</strong><br>
+                        Platform: ${verifiedProfile.platform}<br>
+                        Takipçi: ${verifiedProfile.public_info.followers_count}
+                    </div>
+                `;
+                
+                // Gelişmiş arama formunu göster
+                document.getElementById('advancedSearchForm').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Doğrulama hatası:', error);
+                verificationResult.innerHTML = `<div class="error">❌ Doğrulama hatası: ${error.message}</div>`;
+            }
+        }
+        
+        async function performAdvancedSearch() {
+            const resultsDiv = document.getElementById('results');
+            const includeImageAnalysis = document.getElementById('includeImageAnalysis').checked;
+            const searchDepth = document.getElementById('searchDepth').value;
+            
+            if (!verifiedProfile) {
+                showError('Önce profili doğrulayın!');
+                return;
+            }
+            
+            // Loading göster
+            resultsDiv.innerHTML = '<div class="loading">🚀 Gelişmiş arama yapılıyor...</div>';
+            
+            try {
+                const response = await fetch('/api/advanced-profile-search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        verified_profile: verifiedProfile,
+                        search_depth: searchDepth,
+                        include_image_analysis: includeImageAnalysis
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                displayAdvancedResults(data);
+                
+            } catch (error) {
+                console.error('Arama hatası:', error);
+                showError('Arama sırasında hata oluştu: ' + error.message);
+            }
+        }
+        
+        function displayAdvancedResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = '<div class="success">✅ Gelişmiş arama tamamlandı!</div>';
+            
+            // Doğrulanmış profil bilgileri
+            html += `
+                <div class="result-card">
+                    <h3>🎯 Doğrulanmış Profil</h3>
+                    <div class="result-header">
+                        <div class="result-avatar">
+                            <img src="${data.verified_profile.profile_picture}" alt="Profil" style="width: 50px; height: 50px; border-radius: 50%;">
+                        </div>
+                        <div class="result-info">
+                            <h4>${data.verified_profile.display_name}</h4>
+                            <p>Platform: ${data.verified_profile.platform}</p>
+                            <p>Takipçi: ${data.verified_profile.public_info.followers_count}</p>
+                        </div>
+                        <div class="platform-badge">✅ DOĞRULANDI</div>
+                    </div>
+                </div>
+            `;
+            
+            // Resim analizi sonuçları
+            if (data.image_analysis) {
+                html += `
+                    <div class="result-card">
+                        <h3>📸 Resim Analizi (Google Lens benzeri)</h3>
+                        <p><strong>Yüz Tespiti:</strong> ${data.image_analysis.results.faces_detected} yüz bulundu</p>
+                        <p><strong>Güven Skoru:</strong> ${Math.round(data.image_analysis.results.face_confidence * 100)}%</p>
+                        <p><strong>Yaş Tahmini:</strong> ${data.image_analysis.results.estimated_age}</p>
+                        <p><strong>Duygular:</strong> ${data.image_analysis.results.emotions.join(', ')}</p>
+                        
+                        <h4>🔄 Tersine Görsel Arama</h4>
+                        <p><strong>Toplam Sonuç:</strong> ${data.image_analysis.results.reverse_image_search.total_results}</p>
+                        <ul>
+                            ${data.image_analysis.results.reverse_image_search.sources.map(source => 
+                                `<li><strong>${source.platform}:</strong> <a href="${source.url}" target="_blank">${source.url}</a></li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Arama sonuçları
+            if (data.search_results && data.search_results.length > 0) {
+                html += '<div class="result-card"><h3>🔍 Arama Sonuçları</h3>';
+                data.search_results.forEach(searchResult => {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h4>Sorgu: "${searchResult.query}"</h4>
+                            ${searchResult.results.map(result => `
+                                <div style="padding: 10px; border-left: 3px solid #667eea; margin: 10px 0;">
+                                    <h5><a href="${result.url}" target="_blank">${result.title}</a></h5>
+                                    <p>${result.snippet}</p>
+                                    <p><strong>Güven:</strong> ${Math.round(result.confidence * 100)}%</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+        
+        // Enter tuşu ile arama
+        document.getElementById('searchName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+        document.getElementById('searchEmail').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>

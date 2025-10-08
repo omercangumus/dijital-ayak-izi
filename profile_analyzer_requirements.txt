@@ -1,0 +1,6 @@
+# Profil Analiz Scripti Gereksinimleri
+requests==2.32.3
+beautifulsoup4==4.12.2
+google-api-python-client==2.109.0
+python-dotenv==1.1.1
+lxml==4.9.3

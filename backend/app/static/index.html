@@ -757,6 +757,7 @@
     <div class="container">
         <div class="tabs">
             <button class="tab active" onclick="showTab('scan')">🔍 İz Tarama</button>
+            <button class="tab" onclick="showTab('profile-analysis')">🔬 Profil Analiz</button>
             <button class="tab" onclick="showTab('image')">📷 Görsel Analiz</button>
             <button class="tab" onclick="showTab('account')">👤 Hesap</button>
         </div>
@@ -793,7 +794,147 @@
                 <div id="scanResults"></div>
             </div>
         </div>
-        
+
+        <!-- Profil Analiz Motoru Sekmesi -->
+        <div id="profile-analysis" class="tab-content">
+            <!-- Etik Uyarı -->
+            <div class="card" style="border-left: 4px solid #ef4444; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);">
+                <h2 style="color: #991b1b;">⚠️ Etik Kullanım Uyarısı</h2>
+                <div style="color: #7f1d1d; line-height: 1.6;">
+                    <p><strong>Bu araç sadece yasal ve etik amaçlar için kullanılmalıdır:</strong></p>
+                    <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                        <li>✅ Kendi profillerinizi analiz etmek</li>
+                        <li>✅ Açık onay verilen profilleri analiz etmek</li>
+                        <li>✅ Güvenlik araştırması ve eğitim amaçlı kullanım</li>
+                        <li>✅ Dijital ayak izi farkındalığı eğitimi</li>
+                    </ul>
+                    <p><strong>❌ YASAK KULLANIM:</strong> Başkalarının profillerini izinsiz analiz etmek, KVKK ihlali, stalking veya kötü niyetli amaçlarla kullanım.</p>
+                    <p style="font-size: 0.9rem; margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 6px;">
+                        <strong>Yasal Uyarı:</strong> Bu araç KVKK ve diğer gizlilik yasalarına uygun olarak kullanılmalıdır. Yasadışı kullanım yasaktır ve sorumluluk kullanıcıya aittir.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sosyal Medya Arama -->
+            <div class="card">
+                <h2>🔍 Sosyal Medya Profil Arama</h2>
+                <div class="info-box">
+                    💡 İsim ve platform belirterek sosyal medya profillerini arayın
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Ad Soyad</label>
+                        <input type="text" id="searchName" placeholder="Ad Soyad">
+                    </div>
+                    <div class="form-group">
+                        <label>Platform (Opsiyonel)</label>
+                        <select id="searchPlatform" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 8px; background: white;">
+                            <option value="">Tüm Platformlar</option>
+                            <option value="twitter">Twitter</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="github">GitHub</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="searchSocialMedia()">🔍 Profil Ara</button>
+                
+                <div id="socialMediaResults"></div>
+            </div>
+
+            <!-- Profil Analizi -->
+            <div class="card">
+                <h2>🔬 Detaylı Profil Analizi</h2>
+                <div class="info-box">
+                    🔬 Profil URL'i girerek derinlemesine analiz yapın
+                </div>
+                
+                <div class="form-group">
+                    <label>Profil URL'i</label>
+                    <input type="url" id="profileUrl" placeholder="https://twitter.com/kullanici_adi">
+                    <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">
+                        Desteklenen platformlar: Twitter, LinkedIn, Instagram, Facebook, GitHub, YouTube
+                    </div>
+                </div>
+
+                <button class="btn" onclick="analyzeProfile()">🔬 Profil Analiz Et</button>
+                
+                <div id="profileAnalysisResults"></div>
+            </div>
+
+            <!-- Ters Görsel Arama -->
+            <div class="card">
+                <h2>🖼️ Ters Görsel Arama</h2>
+                <div class="info-box">
+                    🔍 Görsel URL'i ile ters arama yaparak görselin başka yerlerde kullanılıp kullanılmadığını kontrol edin
+                </div>
+                
+                <div class="form-group">
+                    <label>Görsel URL'i</label>
+                    <input type="url" id="imageUrl" placeholder="https://example.com/profil-foto.jpg">
+                </div>
+
+                <button class="btn" onclick="reverseImageSearch()">🖼️ Ters Arama Yap</button>
+                
+                <div id="reverseImageResults"></div>
+            </div>
+
+            <!-- Kullanıcı Adı Kontrolü -->
+            <div class="card">
+                <h2>👤 Kullanıcı Adı Varlık Kontrolü</h2>
+                <div class="info-box">
+                    🌐 Kullanıcı adınızın 50+ popüler platformdaki varlığını kontrol edin
+                </div>
+                
+                <div class="form-group">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" id="username" placeholder="kullanici_adi">
+                </div>
+
+                <button class="btn" onclick="checkUsername()">👤 Kullanıcı Adını Kontrol Et</button>
+                
+                <div id="usernameResults"></div>
+            </div>
+
+            <!-- E-posta Çıkarma -->
+            <div class="card">
+                <h2>📧 Bio'dan E-posta Çıkarma</h2>
+                <div class="info-box">
+                    📝 Bio metninden e-posta adreslerini otomatik olarak çıkarın
+                </div>
+                
+                <div class="form-group">
+                    <label>Bio Metni</label>
+                    <textarea id="bioText" placeholder="Bio metninizi buraya yazın..." style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 8px; min-height: 100px; resize: vertical;"></textarea>
+                </div>
+
+                <button class="btn" onclick="extractEmail()">📧 E-posta Çıkar</button>
+                
+                <div id="emailResults"></div>
+            </div>
+
+            <!-- Halka Açık Fotoğraflar -->
+            <div class="card">
+                <h2>📸 Halka Açık Fotoğraflar</h2>
+                <div class="info-box">
+                    🖼️ Profildeki halka açık fotoğrafları listele
+                </div>
+                
+                <div class="form-group">
+                    <label>Profil URL'i</label>
+                    <input type="url" id="photosUrl" placeholder="https://instagram.com/kullanici_adi">
+                </div>
+
+                <button class="btn" onclick="listPublicPhotos()">📸 Fotoğrafları Listele</button>
+                
+                <div id="photosResults"></div>
+            </div>
+        </div>
+
         <!-- Onaylama Ekranı -->
         <div id="confirmationScreen" class="confirmation-screen">
             <div class="confirmation-modal">
@@ -1252,6 +1393,651 @@
             } catch (err) {
                 document.getElementById('registerResult').innerHTML = '<div class="result" style="border-left-color:#ef4444;">❌ Kayıt başarısız.</div>';
             }
+        }
+
+        // Profil Analiz Motoru Fonksiyonları
+
+        async function searchSocialMedia() {
+            const name = document.getElementById('searchName').value.trim();
+            const platform = document.getElementById('searchPlatform').value;
+
+            if (!name) {
+                alert('Lütfen ad soyad girin!');
+                return;
+            }
+
+            document.getElementById('socialMediaResults').innerHTML = '<div class="empty-state">⏳ Sosyal medya profilleri aranıyor...</div>';
+
+            try {
+                const response = await fetch('/api/profile-analysis/search-social-media', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, platform: platform || null })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySocialMediaResults(data);
+                } else {
+                    throw new Error(data.error || 'Sosyal medya arama başarısız');
+                }
+            } catch (err) {
+                console.error('Social media search error:', err);
+                document.getElementById('socialMediaResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ Sosyal medya arama hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">Hata: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        function displaySocialMediaResults(data) {
+            // Veri kontrolü
+            if (!data || !data.profiles) {
+                document.getElementById('socialMediaResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ Veri Hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">API'den geçersiz veri döndü.</p>
+                    </div>`;
+                return;
+            }
+
+            let html = `
+                <div class="result">
+                    <h3>🔍 Sosyal Medya Arama Sonuçları</h3>
+                    <p style="color:#64748b;margin-bottom:1rem;">Toplam ${data.total_found || 0} profil bulundu</p>
+            `;
+
+            if (data.profiles && data.profiles.length > 0) {
+                data.profiles.forEach(profile => {
+                    // Profil verilerini güvenli şekilde kontrol et
+                    const platformIcon = getPlatformIcon(profile?.platform);
+                    const profileName = profile?.name || 'Bilinmeyen';
+                    const profileUrl = profile?.profile_url || '#';
+                    const username = profile?.username || 'Bilinmeyen';
+                    const platform = profile?.platform || 'Bilinmeyen';
+                    
+                    html += `
+                        <div class="result-item">
+                            <span class="type-badge social">${platform}</span>
+                            <div style="padding-right: 80px;">
+                                ${platformIcon} <a href="${profileUrl}" target="_blank">${profileName}</a>
+                                <div class="description">
+                                    <strong>Kullanıcı Adı:</strong> ${username}<br>
+                                    <strong>Platform:</strong> ${platform}<br>
+                                    ${profile?.bio ? `<strong>Bio:</strong> ${profile.bio}<br>` : ''}
+                                    ${profile?.followers ? `<strong>Takipçi:</strong> ${profile.followers}<br>` : ''}
+                                    ${profile?.verified ? '<span style="color:#10b981;">✓ Doğrulanmış Hesap</span>' : ''}
+                                </div>
+                    `;
+
+                    if (profile?.profile_picture) {
+                        html += `
+                            <div class="image-preview" style="margin: 1rem 0;">
+                                <img src="${profile.profile_picture}" alt="Profil fotoğrafı" 
+                                     onerror="this.style.display='none'" 
+                                     style="border-radius: 50%; width: 80px; height: 80px; object-fit: cover; border: 3px solid #e2e8f0;">
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">📸 Profil Fotoğrafı</div>
+                            </div>
+                        `;
+                    }
+
+                    html += '</div></div>';
+                });
+            } else {
+                html += '<div class="empty-state">❌ Hiç profil bulunamadı</div>';
+            }
+
+            html += '</div>';
+            document.getElementById('socialMediaResults').innerHTML = html;
+        }
+
+        async function analyzeProfile() {
+            const profileUrl = document.getElementById('profileUrl').value.trim();
+
+            if (!profileUrl) {
+                alert('Lütfen profil URL\'i girin!');
+                return;
+            }
+
+            document.getElementById('profileAnalysisResults').innerHTML = '<div class="empty-state">⏳ Profil analiz ediliyor...</div>';
+
+            try {
+                const response = await fetch('/api/profile-analysis/analyze-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_url: profileUrl })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayProfileAnalysisResults(data);
+                } else {
+                    throw new Error(data.error || 'Profil analizi başarısız');
+                }
+            } catch (err) {
+                console.error('Profile analysis error:', err);
+                document.getElementById('profileAnalysisResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ Profil analiz hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">Hata: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        function displayProfileAnalysisResults(data) {
+            const analysis = data.data;
+            let html = `
+                <div class="result">
+                    <h3>🔬 Profil Analiz Sonuçları</h3>
+                    <p style="color:#64748b;margin-bottom:1rem;">
+                        Analiz süresi: ${data.processing_time.toFixed(2)}s
+                    </p>
+            `;
+
+            // Profil Detayları
+            if (analysis.profile_details) {
+                const details = analysis.profile_details;
+                html += `
+                    <div class="result-item">
+                        <h4>📋 Profil Detayları</h4>
+                        <div class="description">
+                            <strong>Platform:</strong> ${details.platform || 'Bilinmiyor'}<br>
+                            <strong>Kullanıcı Adı:</strong> ${details.username || 'Bilinmiyor'}<br>
+                            <strong>Tam Ad:</strong> ${details.full_name || 'Bilinmiyor'}<br>
+                            ${details.bio ? `<strong>Bio:</strong> ${details.bio}<br>` : ''}
+                            ${details.verification_status ? '<span style="color:#10b981;">✓ Doğrulanmış Hesap</span><br>' : ''}
+                        </div>
+                `;
+
+                if (details.profile_picture) {
+                    html += `
+                        <div class="image-preview" style="margin: 1rem 0;">
+                            <img src="${details.profile_picture}" alt="Profil fotoğrafı" 
+                                 onerror="this.style.display='none'" 
+                                 style="border-radius: 50%; width: 100px; height: 100px; object-fit: cover;">
+                            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">📸 Profil Fotoğrafı</div>
+                        </div>
+                    `;
+                }
+
+                html += '</div>';
+            }
+
+            // Ters Görsel Arama Sonuçları
+            if (analysis.reverse_image_results && analysis.reverse_image_results.length > 0) {
+                html += `
+                    <div class="result-item">
+                        <h4>🖼️ Ters Görsel Arama Sonuçları</h4>
+                        <p style="color:#ef4444;font-weight:600;">⚠️ Profil fotoğrafınız ${analysis.reverse_image_results.length} farklı yerde bulundu!</p>
+                `;
+
+                analysis.reverse_image_results.forEach(result => {
+                    html += `
+                        <div style="margin: 0.5rem 0; padding: 0.75rem; background: #fef2f2; border-radius: 6px; border-left: 3px solid #ef4444;">
+                            <a href="${result.source_url}" target="_blank" style="color:#ef4444;font-weight:600;">${result.title}</a><br>
+                            <small style="color:#64748b;">Benzerlik: %${Math.round(result.similarity_score * 100)}</small>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
+            // Diğer Hesaplar
+            if (analysis.other_accounts && analysis.other_accounts.length > 0) {
+                html += `
+                    <div class="result-item">
+                        <h4>🌐 Diğer Platformlardaki Hesaplar</h4>
+                        <p style="color:#64748b;">Aynı kullanıcı adı ile ${analysis.other_accounts.length} platformda hesap bulundu</p>
+                `;
+
+                analysis.other_accounts.forEach(account => {
+                    const platformIcon = getPlatformIcon(account.platform);
+                    html += `
+                        <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; border-left: 3px solid #0ea5e9;">
+                            ${platformIcon} <a href="${account.url}" target="_blank" style="color:#0ea5e9;font-weight:600;">${account.platform}</a><br>
+                            ${account.bio ? `<small style="color:#64748b;">${account.bio}</small><br>` : ''}
+                            ${account.followers ? `<small style="color:#64748b;">Takipçi: ${account.followers}</small>` : ''}
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
+            // Halka Açık E-posta
+            if (analysis.public_email) {
+                html += `
+                    <div class="result-item" style="border-left-color:#ef4444;">
+                        <h4>📧 Halka Açık E-posta</h4>
+                        <p style="color:#ef4444;font-weight:600;">⚠️ Bio'da halka açık e-posta bulundu!</p>
+                        <div class="description">
+                            <strong>E-posta:</strong> ${analysis.public_email}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Halka Açık Fotoğraflar
+            if (analysis.public_photos && analysis.public_photos.length > 0) {
+                html += `
+                    <div class="result-item">
+                        <h4>📸 Halka Açık Fotoğraflar</h4>
+                        <p style="color:#64748b;">${analysis.public_photos.length} halka açık fotoğraf bulundu</p>
+                `;
+
+                analysis.public_photos.forEach(photo => {
+                    html += `
+                        <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f8fafc; border-radius: 6px;">
+                            <img src="${photo.thumbnail || photo.url}" alt="Fotoğraf" 
+                                 onerror="this.style.display='none'" 
+                                 style="max-width: 150px; border-radius: 6px; margin-bottom: 0.5rem;">
+                            <br>
+                            <a href="${photo.url}" target="_blank" style="color:#6366f1;">Fotoğrafı Görüntüle</a>
+                            ${photo.caption ? `<br><small style="color:#64748b;">${photo.caption}</small>` : ''}
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
+            // Risk Değerlendirmesi
+            if (analysis.risk_assessment) {
+                const risk = analysis.risk_assessment;
+                const riskColor = risk.risk_level === 'Yüksek' ? '#ef4444' : risk.risk_level === 'Orta' ? '#f59e0b' : '#10b981';
+                
+                html += `
+                    <div class="result-item" style="border-left-color:${riskColor};">
+                        <h4>⚠️ Risk Değerlendirmesi</h4>
+                        <div class="description">
+                            <strong>Risk Skoru:</strong> ${risk.risk_score}/100<br>
+                            <strong>Risk Seviyesi:</strong> <span style="color:${riskColor};font-weight:600;">${risk.risk_level}</span>
+                        </div>
+                `;
+
+                if (risk.risk_factors && risk.risk_factors.length > 0) {
+                    html += '<h5>Risk Faktörleri:</h5><ul>';
+                    risk.risk_factors.forEach(factor => {
+                        html += `<li style="color:#ef4444;">${factor}</li>`;
+                    });
+                    html += '</ul>';
+                }
+
+                if (risk.recommendations && risk.recommendations.length > 0) {
+                    html += '<h5>Öneriler:</h5><ul>';
+                    risk.recommendations.forEach(rec => {
+                        html += `<li style="color:#10b981;">${rec}</li>`;
+                    });
+                    html += '</ul>';
+                }
+
+                html += '</div>';
+            }
+
+            html += '</div>';
+            document.getElementById('profileAnalysisResults').innerHTML = html;
+        }
+
+        async function reverseImageSearch() {
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+
+            if (!imageUrl) {
+                alert('Lütfen görsel URL\'i girin!');
+                return;
+            }
+
+            document.getElementById('reverseImageResults').innerHTML = '<div class="empty-state">⏳ Ters görsel arama yapılıyor...</div>';
+
+            try {
+                const response = await fetch('/api/profile-analysis/reverse-image-search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_url: imageUrl })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayReverseImageResults(data);
+                } else {
+                    throw new Error(data.error || 'Ters görsel arama başarısız');
+                }
+            } catch (err) {
+                console.error('Reverse image search error:', err);
+                document.getElementById('reverseImageResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ Ters görsel arama hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">Hata: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        function displayReverseImageResults(data) {
+            let html = `
+                <div class="result">
+                    <h3>🖼️ Ters Görsel Arama Sonuçları</h3>
+                    <p style="color:#64748b;margin-bottom:1rem;">Toplam ${data.total_found} sonuç bulundu</p>
+            `;
+
+            if (data.results.length > 0) {
+                data.results.forEach(result => {
+                    html += `
+                        <div class="result-item">
+                            <div style="padding-right: 80px;">
+                                🔍 <a href="${result.source_url}" target="_blank">${result.title}</a>
+                                <div class="description">
+                                    <strong>Benzerlik Skoru:</strong> %${Math.round(result.similarity_score * 100)}<br>
+                                    <strong>Bulunma Tarihi:</strong> ${result.found_date || 'Bilinmiyor'}<br>
+                                    <strong>Kaynak URL:</strong> <a href="${result.source_url}" target="_blank">${result.source_url}</a>
+                                </div>
+                    `;
+
+                    if (result.image_url) {
+                        html += `
+                            <div class="image-preview" style="margin: 1rem 0;">
+                                <img src="${result.image_url}" alt="Bulunan görsel" 
+                                     onerror="this.style.display='none'" 
+                                     style="max-width: 200px; border-radius: 6px;">
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">📷 Bulunan Görsel</div>
+                            </div>
+                        `;
+                    }
+
+                    html += '</div></div>';
+                });
+            } else {
+                html += '<div class="empty-state">✅ Görsel başka yerde kullanılmamış</div>';
+            }
+
+            html += '</div>';
+            document.getElementById('reverseImageResults').innerHTML = html;
+        }
+
+        async function checkUsername() {
+            const username = document.getElementById('username').value.trim();
+
+            if (!username) {
+                alert('Lütfen kullanıcı adı girin!');
+                return;
+            }
+
+            document.getElementById('usernameResults').innerHTML = '<div class="empty-state">⏳ Kullanıcı adı kontrol ediliyor...</div>';
+
+            try {
+                const response = await fetch('/api/profile-analysis/discover-other-accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayUsernameResults(data);
+                } else {
+                    throw new Error(data.error || 'Kullanıcı adı kontrolü başarısız');
+                }
+            } catch (err) {
+                console.error('Username check error:', err);
+                document.getElementById('usernameResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ Kullanıcı adı kontrol hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">Hata: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        function displayUsernameResults(data) {
+            let html = `
+                <div class="result">
+                    <h3>👤 Kullanıcı Adı Kontrol Sonuçları</h3>
+                    <p style="color:#64748b;margin-bottom:1rem;">Toplam ${data.total_found} platformda hesap bulundu</p>
+            `;
+
+            if (data.accounts.length > 0) {
+                data.accounts.forEach(account => {
+                    const platformIcon = getPlatformIcon(account.platform);
+                    html += `
+                        <div class="result-item">
+                            <span class="type-badge social">${account.platform}</span>
+                            <div style="padding-right: 80px;">
+                                ${platformIcon} <a href="${account.url}" target="_blank">${account.platform}</a>
+                                <div class="description">
+                                    <strong>Durum:</strong> <span style="color:#10b981;">✓ Aktif</span><br>
+                                    <strong>URL:</strong> <a href="${account.url}" target="_blank">${account.url}</a><br>
+                                    ${account.bio ? `<strong>Bio:</strong> ${account.bio}<br>` : ''}
+                                    ${account.followers ? `<strong>Takipçi:</strong> ${account.followers}<br>` : ''}
+                                </div>
+                    `;
+
+                    if (account.profile_picture) {
+                        html += `
+                            <div class="image-preview" style="margin: 1rem 0;">
+                                <img src="${account.profile_picture}" alt="Profil fotoğrafı" 
+                                     onerror="this.style.display='none'" 
+                                     style="border-radius: 50%; width: 60px; height: 60px; object-fit: cover;">
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">📸 Profil Fotoğrafı</div>
+                            </div>
+                        `;
+                    }
+
+                    html += '</div></div>';
+                });
+            } else {
+                html += '<div class="empty-state">❌ Hiçbir platformda hesap bulunamadı</div>';
+            }
+
+            html += '</div>';
+            document.getElementById('usernameResults').innerHTML = html;
+        }
+
+        async function extractEmail() {
+            const bioText = document.getElementById('bioText').value.trim();
+
+            if (!bioText) {
+                alert('Lütfen bio metni girin!');
+                return;
+            }
+
+            document.getElementById('emailResults').innerHTML = '<div class="empty-state">⏳ E-posta adresleri aranıyor...</div>';
+
+            try {
+                const response = await fetch('/api/profile-analysis/find-public-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bio_text: bioText })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayEmailResults(data);
+                } else {
+                    throw new Error(data.error || 'E-posta çıkarma başarısız');
+                }
+            } catch (err) {
+                console.error('Email extraction error:', err);
+                document.getElementById('emailResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ E-posta çıkarma hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">Hata: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        function displayEmailResults(data) {
+            let html = `
+                <div class="result">
+                    <h3>📧 E-posta Çıkarma Sonuçları</h3>
+            `;
+
+            if (data.found) {
+                html += `
+                    <div class="result-item" style="border-left-color:#ef4444;">
+                        <h4>⚠️ Halka Açık E-posta Bulundu!</h4>
+                        <div class="description">
+                            <strong>E-posta:</strong> ${data.email}<br>
+                            <p style="color:#ef4444;margin-top:0.5rem;">
+                                ⚠️ Bu e-posta adresi bio'da halka açık olarak paylaşılmış. 
+                                Güvenlik açısından önerilmez.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="result-item" style="border-left-color:#10b981;">
+                        <h4>✅ Halka Açık E-posta Bulunamadı</h4>
+                        <div class="description">
+                            Bio metninde halka açık e-posta adresi bulunamadı. Bu güvenlik açısından iyi bir durum.
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            document.getElementById('emailResults').innerHTML = html;
+        }
+
+        async function listPublicPhotos() {
+            const photosUrl = document.getElementById('photosUrl').value.trim();
+
+            if (!photosUrl) {
+                alert('Lütfen profil URL\'i girin!');
+                return;
+            }
+
+            document.getElementById('photosResults').innerHTML = '<div class="empty-state">⏳ Halka açık fotoğraflar listeleniyor...</div>';
+
+            try {
+                const response = await fetch('/api/profile-analysis/list-public-photos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_url: photosUrl })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayPhotosResults(data);
+                } else {
+                    throw new Error(data.error || 'Fotoğraf listeleme başarısız');
+                }
+            } catch (err) {
+                console.error('Photos listing error:', err);
+                document.getElementById('photosResults').innerHTML = `
+                    <div class="result" style="border-left-color:#ef4444;">
+                        <h3>❌ Fotoğraf listeleme hatası</h3>
+                        <p style="margin-top:0.5rem;color:#64748b;">Hata: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        function displayPhotosResults(data) {
+            let html = `
+                <div class="result">
+                    <h3>📸 Halka Açık Fotoğraflar</h3>
+                    <p style="color:#64748b;margin-bottom:1rem;">Toplam ${data.total_found} fotoğraf bulundu</p>
+            `;
+
+            if (data.photos.length > 0) {
+                data.photos.forEach(photo => {
+                    html += `
+                        <div class="result-item">
+                            <div style="padding-right: 80px;">
+                                📸 <a href="${photo.url}" target="_blank">Halka Açık Fotoğraf</a>
+                                <div class="description">
+                                    <strong>URL:</strong> <a href="${photo.url}" target="_blank">Fotoğrafı Görüntüle</a><br>
+                                    ${photo.caption ? `<strong>Başlık:</strong> ${photo.caption}<br>` : ''}
+                                    ${photo.date ? `<strong>Tarih:</strong> ${photo.date}<br>` : ''}
+                                </div>
+                    `;
+
+                    if (photo.thumbnail || photo.url) {
+                        html += `
+                            <div class="image-preview" style="margin: 1rem 0;">
+                                <img src="${photo.thumbnail || photo.url}" alt="Fotoğraf" 
+                                     onerror="this.style.display='none'" 
+                                     style="max-width: 200px; border-radius: 6px;">
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">📷 Fotoğraf Önizleme</div>
+                            </div>
+                        `;
+                    }
+
+                    html += '</div></div>';
+                });
+            } else {
+                html += '<div class="empty-state">❌ Halka açık fotoğraf bulunamadı</div>';
+            }
+
+            html += '</div>';
+            document.getElementById('photosResults').innerHTML = html;
+        }
+
+        function getPlatformIcon(platform) {
+            // Platform undefined ise varsayılan ikon döndür
+            if (!platform) return '🌐';
+            
+            const icons = {
+                'twitter': '🐦',
+                'linkedin': '💼',
+                'instagram': '📷',
+                'facebook': '👥',
+                'github': '💻',
+                'youtube': '📺',
+                'reddit': '🤖',
+                'tiktok': '🎵',
+                'pinterest': '📌',
+                'snapchat': '👻',
+                'medium': '📝',
+                'dev.to': '💻',
+                'behance': '🎨',
+                'dribbble': '🏀',
+                'steam': '🎮',
+                'discord': '💬',
+                'telegram': '✈️',
+                'twitch': '🎮',
+                'vimeo': '🎬',
+                'soundcloud': '🎵',
+                'spotify': '🎵',
+                'last.fm': '🎵',
+                'flickr': '📸',
+                '500px': '📸',
+                'deviantart': '🎨',
+                'artstation': '🎨',
+                'codepen': '💻',
+                'stackoverflow': '💻',
+                'gitlab': '💻',
+                'bitbucket': '💻',
+                'keybase': '🔑',
+                'hackernews': '📰',
+                'producthunt': '🚀',
+                'angellist': '👼',
+                'crunchbase': '💼',
+                'slideshare': '📊',
+                'speakerdeck': '📊',
+                'mixcloud': '🎵',
+                'goodreads': '📚',
+                'letterboxd': '🎬',
+                'imdb': '🎬',
+                'researchgate': '🔬',
+                'academia': '🎓',
+                'orcid': '🔬',
+                'google scholar': '🎓',
+                'mendeley': '📚',
+                'kaggle': '📊',
+                'hackerrank': '💻',
+                'leetcode': '💻',
+                'codeforces': '💻',
+                'atcoder': '💻',
+                'topcoder': '💻',
+                'codechef': '💻'
+            };
+            return icons[platform.toLowerCase()] || '🌐';
         }
     </script>
 </body>

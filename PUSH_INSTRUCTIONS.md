@@ -74,3 +74,4 @@ Repository oluştuktan sonra:
 - ✅ Hassas dosyalar push edilmiyor
 
 **Hazır! GitHub repository URL'sini aldıktan sonra push komutlarını çalıştırabilirsiniz.** 🎉
+

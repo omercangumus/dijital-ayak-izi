@@ -11,6 +11,21 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json()
 }
 
+const PLATFORMS = [
+  { id: 'twitter', name: 'Twitter', icon: '🐦', color: '#1DA1F2' },
+  { id: 'linkedin', name: 'LinkedIn', icon: '💼', color: '#0077B5' },
+  { id: 'instagram', name: 'Instagram', icon: '📸', color: '#E4405F' },
+  { id: 'facebook', name: 'Facebook', icon: '👥', color: '#1877F2' },
+  { id: 'youtube', name: 'YouTube', icon: '📺', color: '#FF0000' },
+  { id: 'github', name: 'GitHub', icon: '💻', color: '#333' },
+  { id: 'medium', name: 'Medium', icon: '📝', color: '#00AB6C' },
+  { id: 'tiktok', name: 'TikTok', icon: '🎵', color: '#000000' },
+  { id: 'reddit', name: 'Reddit', icon: '🤖', color: '#FF4500' },
+  { id: 'pinterest', name: 'Pinterest', icon: '📌', color: '#E60023' },
+  { id: 'snapchat', name: 'Snapchat', icon: '👻', color: '#FFFC00' },
+  { id: 'behance', name: 'Behance', icon: '🎨', color: '#1769FF' }
+]
+
 export const App: React.FC = () => {
   const [health, setHealth] = useState<string>('')
   const [ping, setPing] = useState<string>('')
@@ -22,6 +37,13 @@ export const App: React.FC = () => {
   const [verifyMsg, setVerifyMsg] = useState('')
   const [scanResults, setScanResults] = useState<any>(null)
   const [imageInfo, setImageInfo] = useState<any>(null)
+  
+  // Yeni platform arama özellikleri
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('')
+  const [searchName, setSearchName] = useState('')
+  const [searchEmail, setSearchEmail] = useState('')
+  const [platformResults, setPlatformResults] = useState<any>(null)
+  const [isSearching, setIsSearching] = useState(false)
 
   const checkHealth = async () => {
     const r = await api<{ status: string }>(`/health`)
@@ -64,6 +86,27 @@ export const App: React.FC = () => {
     setImageInfo(data)
   }
 
+  const doPlatformSearch = async () => {
+    if (!selectedPlatform || !searchName) return
+    
+    setIsSearching(true)
+    try {
+      const r = await api<any>(`/platform-search`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          full_name: searchName, 
+          email: searchEmail || null,
+          platform: selectedPlatform 
+        }),
+      })
+      setPlatformResults(r)
+    } catch (error) {
+      console.error('Platform arama hatası:', error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
   return (
     <div className="container">
       <div className="header">
@@ -94,7 +137,91 @@ export const App: React.FC = () => {
       </div>
 
       <div className="section">
-        <h2>🔎 İsim Taraması</h2>
+        <h2>🎯 Platform Bazlı Arama</h2>
+        <div className="platform-selector">
+          <div className="platform-grid">
+            {PLATFORMS.map(platform => (
+              <div 
+                key={platform.id}
+                className={`platform-card ${selectedPlatform === platform.id ? 'selected' : ''}`}
+                onClick={() => setSelectedPlatform(platform.id)}
+                style={{ borderColor: platform.color }}
+              >
+                <div className="platform-icon" style={{ color: platform.color }}>
+                  {platform.icon}
+                </div>
+                <div className="platform-name">{platform.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="search-form">
+          <div className="input-group">
+            <input 
+              type="text" 
+              placeholder="Aranacak kişinin adı soyadı" 
+              value={searchName} 
+              onChange={e => setSearchName(e.target.value)} 
+            />
+            <input 
+              type="email" 
+              placeholder="E-posta (opsiyonel)" 
+              value={searchEmail} 
+              onChange={e => setSearchEmail(e.target.value)} 
+            />
+          </div>
+          <button 
+            onClick={doPlatformSearch} 
+            disabled={!selectedPlatform || !searchName || isSearching}
+            className="search-button"
+          >
+            {isSearching ? '🔍 Aranıyor...' : '🔍 Platformda Ara'}
+          </button>
+        </div>
+
+        {platformResults && (
+          <div className="result-box">
+            <div className="info-row">
+              <strong>Risk Skoru:</strong> {platformResults.risk_score}/100
+              <span className={`risk-badge risk-${platformResults.risk_level}`}>{platformResults.risk_level}</span>
+            </div>
+            <div className="results-header">
+              <h3>📸 Bulunan Profiller ve Fotoğraflar</h3>
+            </div>
+            <div className="profile-grid">
+              {platformResults.results?.map((result: any, idx: number) => (
+                <div key={idx} className="profile-card">
+                  <div className="profile-header">
+                    <h4>{result.title}</h4>
+                    <span className="platform-badge" style={{ backgroundColor: PLATFORMS.find(p => p.id === result.source)?.color || '#666' }}>
+                      {PLATFORMS.find(p => p.id === result.source)?.icon} {result.source}
+                    </span>
+                  </div>
+                  {result.profile_photo && (
+                    <div className="profile-photo">
+                      <img src={result.profile_photo} alt="Profil fotoğrafı" />
+                    </div>
+                  )}
+                  {result.location && (
+                    <div className="profile-location">
+                      📍 {result.location.address || 'Konum bilgisi mevcut'}
+                    </div>
+                  )}
+                  <div className="profile-link">
+                    <a href={result.link} target="_blank" rel="noreferrer">
+                      🔗 Profili Görüntüle
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="section">
+        <h2>🔎 Genel İsim Taraması</h2>
         <label className="checkbox-label">
           <input type="checkbox" checked={useSynthetic} onChange={e => setUseSynthetic(e.target.checked)} />
           <span>Sentetik demo modu (backend ENV: SYNTHETIC_MODE=true)</span>
