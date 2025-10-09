@@ -126,24 +126,43 @@ class ProfileAnalyzer:
         try:
             logger.info(f"Profil scraping başlatıldı: {profile_url}")
             
-            # Scraper API endpoint
-            scraper_url = "http://api.scraperapi.com"
+            # Platform tespit et
+            platform = self._detect_platform(profile_url)
             
-            params = {
-                'api_key': self.scraper_api_key,
-                'url': profile_url,
-                'render': 'true',  # JavaScript render
-                'country_code': 'us'
-            }
-            
-            response = requests.get(scraper_url, params=params, timeout=30)
-            response.raise_for_status()
-            
-            # HTML'i parse et
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Profil verilerini çıkar
-            profile_data = self._extract_profile_data(soup, profile_url)
+            # Instagram için özel yaklaşım
+            if platform == 'instagram':
+                logger.info("Instagram profili tespit edildi - Meta tag'lerden veri çekiliyor")
+                # Instagram için direkt HTML çekme (Meta tag'ler)
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+                response = requests.get(profile_url, headers=headers, timeout=30)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.content, 'html.parser')
+                profile_data = self._extract_profile_data(soup, profile_url)
+            else:
+                # Diğer platformlar için Scraper API kullan
+                scraper_url = "http://api.scraperapi.com"
+                
+                params = {
+                    'api_key': self.scraper_api_key,
+                    'url': profile_url,
+                    'render': 'true',  # JavaScript render
+                    'country_code': 'us',
+                    'session_number': 1,
+                    'premium': 'true',
+                    'keep_headers': 'true',
+                    'device_type': 'desktop'
+                }
+                
+                response = requests.get(scraper_url, params=params, timeout=30)
+                response.raise_for_status()
+                
+                # HTML'i parse et
+                soup = BeautifulSoup(response.content, 'html.parser')
+                
+                # Profil verilerini çıkar
+                profile_data = self._extract_profile_data(soup, profile_url)
             
             logger.info("Profil scraping başarıyla tamamlandı")
             return profile_data
@@ -219,23 +238,56 @@ class ProfileAnalyzer:
         """Instagram verilerini çıkar"""
         data = {}
         
-        # Meta tag'lerden veri çıkar
-        title_tag = soup.find('title')
-        if title_tag:
-            data['full_name'] = title_tag.get_text().strip()
+        # JSON-LD structured data ara
+        json_scripts = soup.find_all('script', type='application/ld+json')
+        for script in json_scripts:
+            try:
+                import json
+                json_data = json.loads(script.string)
+                if isinstance(json_data, dict):
+                    if 'name' in json_data:
+                        data['full_name'] = json_data['name']
+                    if 'description' in json_data:
+                        data['bio'] = json_data['description']
+                    if 'image' in json_data:
+                        if isinstance(json_data['image'], str):
+                            data['profile_picture'] = json_data['image']
+                        elif isinstance(json_data['image'], dict) and 'url' in json_data['image']:
+                            data['profile_picture'] = json_data['image']['url']
+            except:
+                continue
         
         # Open Graph meta tag'leri
         og_title = soup.find('meta', property='og:title')
-        if og_title:
+        if og_title and not data.get('full_name'):
             data['full_name'] = og_title.get('content', '')
         
         og_description = soup.find('meta', property='og:description')
-        if og_description:
+        if og_description and not data.get('bio'):
             data['bio'] = og_description.get('content', '')
         
         og_image = soup.find('meta', property='og:image')
-        if og_image:
+        if og_image and not data.get('profile_picture'):
             data['profile_picture'] = og_image.get('content', '')
+        
+        # Twitter Card meta tag'leri
+        twitter_title = soup.find('meta', property='twitter:title')
+        if twitter_title and not data.get('full_name'):
+            data['full_name'] = twitter_title.get('content', '')
+        
+        twitter_description = soup.find('meta', property='twitter:description')
+        if twitter_description and not data.get('bio'):
+            data['bio'] = twitter_description.get('content', '')
+        
+        twitter_image = soup.find('meta', property='twitter:image')
+        if twitter_image and not data.get('profile_picture'):
+            data['profile_picture'] = twitter_image.get('content', '')
+        
+        # Title tag'den fallback
+        if not data.get('full_name'):
+            title_tag = soup.find('title')
+            if title_tag:
+                data['full_name'] = title_tag.get_text().strip()
         
         return data
     
@@ -432,13 +484,230 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    """Ana sayfa"""
-    return {
-        "message": "Sosyal Medya Profil Analiz API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "endpoint": "/analyze"
-    }
+    """Ana sayfa - Profil Analiz Uygulaması"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Sosyal Medya Profil Analiz Uygulaması</title>
+        <meta charset="UTF-8">
+        <style>
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                margin: 0; 
+                padding: 20px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }
+            .container { 
+                max-width: 900px; 
+                margin: 0 auto; 
+                background: white; 
+                padding: 40px; 
+                border-radius: 15px; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            }
+            h1 { 
+                color: #333; 
+                text-align: center; 
+                margin-bottom: 30px;
+                font-size: 2.5em;
+            }
+            .form-group {
+                margin-bottom: 25px;
+            }
+            label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: bold;
+                color: #555;
+            }
+            input[type="text"] {
+                width: 100%;
+                padding: 15px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                font-size: 16px;
+                box-sizing: border-box;
+            }
+            input[type="text"]:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+            button {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 30px;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                cursor: pointer;
+                width: 100%;
+                margin-top: 10px;
+            }
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            }
+            button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+            .result {
+                margin-top: 30px;
+                padding: 20px;
+                border-radius: 8px;
+                display: none;
+            }
+            .success {
+                background: #d4edda;
+                border: 1px solid #c3e6cb;
+                color: #155724;
+            }
+            .error {
+                background: #f8d7da;
+                border: 1px solid #f5c6cb;
+                color: #721c24;
+            }
+            .loading {
+                text-align: center;
+                color: #666;
+            }
+            .profile-info {
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                margin-top: 20px;
+            }
+            .profile-info img {
+                max-width: 100px;
+                border-radius: 50%;
+                margin-right: 20px;
+                float: left;
+            }
+            .examples {
+                margin-top: 30px;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+            }
+            .example-link {
+                display: inline-block;
+                margin: 5px 10px 5px 0;
+                padding: 5px 10px;
+                background: #667eea;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            .example-link:hover {
+                background: #764ba2;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔍 Sosyal Medya Profil Analiz Uygulaması</h1>
+            
+            <form id="analyzeForm">
+                <div class="form-group">
+                    <label for="profileUrl">Profil URL'si:</label>
+                    <input type="text" id="profileUrl" name="profileUrl" 
+                           placeholder="https://github.com/nasa" required>
+                </div>
+                <button type="submit" id="analyzeBtn">Profil Analiz Et</button>
+            </form>
+            
+            <div class="examples">
+                <h3>📝 Örnek Profiller:</h3>
+                <span class="example-link" onclick="setUrl('https://github.com/nasa')">NASA GitHub</span>
+                <span class="example-link" onclick="setUrl('https://github.com/microsoft')">Microsoft GitHub</span>
+                <span class="example-link" onclick="setUrl('https://www.instagram.com/nasa/')">NASA Instagram</span>
+                <span class="example-link" onclick="setUrl('https://github.com/facebook')">Facebook GitHub</span>
+            </div>
+            
+            <div id="result" class="result"></div>
+        </div>
+
+        <script>
+            function setUrl(url) {
+                document.getElementById('profileUrl').value = url;
+            }
+
+            document.getElementById('analyzeForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const profileUrl = document.getElementById('profileUrl').value;
+                const resultDiv = document.getElementById('result');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                
+                // Loading state
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = 'Analiz Ediliyor...';
+                resultDiv.className = 'result loading';
+                resultDiv.innerHTML = '🔄 Profil analiz ediliyor, lütfen bekleyin...';
+                resultDiv.style.display = 'block';
+                
+                try {
+                    const response = await fetch('/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            profile_url: profileUrl
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        resultDiv.className = 'result success';
+                        const profile = data.data.profile_analysis;
+                        
+                        let html = '<h3>✅ Analiz Başarılı!</h3>';
+                        html += '<div class="profile-info">';
+                        
+                        if (profile.profile_picture) {
+                            html += `<img src="${profile.profile_picture}" alt="Profil Fotoğrafı" onerror="this.style.display='none'">`;
+                        }
+                        
+                        html += `
+                            <h4>${profile.full_name || 'Bilinmiyor'}</h4>
+                            <p><strong>Platform:</strong> ${profile.platform}</p>
+                            <p><strong>URL:</strong> <a href="${profile.url}" target="_blank">${profile.url}</a></p>
+                        `;
+                        
+                        if (profile.bio) {
+                            html += `<p><strong>Bio:</strong> ${profile.bio}</p>`;
+                        }
+                        
+                        html += `
+                            <p><strong>İşlem Süresi:</strong> ${data.processing_time} saniye</p>
+                            </div>
+                        `;
+                        
+                        resultDiv.innerHTML = html;
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.innerHTML = `<h3>❌ Analiz Başarısız</h3><p>${data.error}</p>`;
+                    }
+                } catch (error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>❌ Hata</h3><p>Bir hata oluştu: ${error.message}</p>`;
+                } finally {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Profil Analiz Et';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html_content)
 
 @app.get("/health")
 async def health_check():

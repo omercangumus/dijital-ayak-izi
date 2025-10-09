@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  backend-osint:
+    build:
+      context: .
+      dockerfile: backend-dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/config.env:/app/config.env
+      - ./backend/.env:/app/.env
+    environment:
+      - ENV=production
+    restart: unless-stopped
+    container_name: backend-osint-app

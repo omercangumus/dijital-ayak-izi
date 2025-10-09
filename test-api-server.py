@@ -15,41 +15,41 @@ BASE_URL = "http://localhost:5001"
 
 def test_health():
     """Health check test"""
-    print("🏥 Health Check Test...")
+    print("Health Check Test...")
     try:
         response = requests.get(f"{BASE_URL}/health", timeout=10)
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Health Check: {data['status']}")
+            print(f"OK Health Check: {data['status']}")
             print(f"   Analyzer Ready: {data['analyzer_ready']}")
             return True
         else:
-            print(f"❌ Health Check Failed: {response.status_code}")
+            print(f"FAIL Health Check Failed: {response.status_code}")
             return False
     except Exception as e:
-        print(f"❌ Health Check Error: {str(e)}")
+        print(f"ERROR Health Check Error: {str(e)}")
         return False
 
 def test_root():
     """Root endpoint test"""
-    print("\n🌐 Root Endpoint Test...")
+    print("\nRoot Endpoint Test...")
     try:
         response = requests.get(f"{BASE_URL}/", timeout=10)
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Root Endpoint: {data['message']}")
+            print(f"OK Root Endpoint: {data['message']}")
             print(f"   Version: {data['version']}")
             return True
         else:
-            print(f"❌ Root Endpoint Failed: {response.status_code}")
+            print(f"FAIL Root Endpoint Failed: {response.status_code}")
             return False
     except Exception as e:
-        print(f"❌ Root Endpoint Error: {str(e)}")
+        print(f"ERROR Root Endpoint Error: {str(e)}")
         return False
 
 def test_analyze(profile_url: str) -> Dict[str, Any]:
     """Analyze endpoint test"""
-    print(f"\n🔍 Analyze Test: {profile_url}")
+    print(f"\nAnalyze Test: {profile_url}")
     
     payload = {
         "profile_url": profile_url
@@ -68,7 +68,7 @@ def test_analyze(profile_url: str) -> Dict[str, Any]:
             data = response.json()
             
             if data['success']:
-                print(f"✅ Analysis Successful!")
+                print(f"OK Analysis Successful!")
                 print(f"   Processing Time: {data['processing_time']}s")
                 
                 profile = data['data']['profile_analysis']
@@ -82,23 +82,23 @@ def test_analyze(profile_url: str) -> Dict[str, Any]:
                 
                 return data
             else:
-                print(f"❌ Analysis Failed: {data['error']}")
+                print(f"FAIL Analysis Failed: {data['error']}")
                 return data
         else:
-            print(f"❌ HTTP Error: {response.status_code}")
+            print(f"FAIL HTTP Error: {response.status_code}")
             print(f"   Response: {response.text[:200]}...")
             return None
             
     except requests.exceptions.Timeout:
-        print("⏰ Request Timeout!")
+        print("TIMEOUT Request Timeout!")
         return None
     except Exception as e:
-        print(f"❌ Analysis Error: {str(e)}")
+        print(f"ERROR Analysis Error: {str(e)}")
         return None
 
 def test_invalid_request():
     """Invalid request test"""
-    print("\n🚫 Invalid Request Test...")
+    print("\nInvalid Request Test...")
     
     # Geçersiz URL
     payload = {
@@ -113,19 +113,19 @@ def test_invalid_request():
         )
         
         if response.status_code == 422:  # Validation Error
-            print("✅ Invalid Request Correctly Rejected")
+            print("OK Invalid Request Correctly Rejected")
             return True
         else:
-            print(f"❌ Expected 422, got {response.status_code}")
+            print(f"FAIL Expected 422, got {response.status_code}")
             return False
             
     except Exception as e:
-        print(f"❌ Invalid Request Test Error: {str(e)}")
+        print(f"ERROR Invalid Request Test Error: {str(e)}")
         return False
 
 def main():
     """Ana test fonksiyonu"""
-    print("🧪 API Server Test Suite")
+    print("API Server Test Suite")
     print("=" * 50)
     
     # Test sırası
@@ -149,6 +149,8 @@ def main():
     
     # 4. Analyze Tests
     test_urls = [
+        "https://github.com/nasa",
+        "https://github.com/microsoft",
         "https://www.instagram.com/nasa/",
         "https://twitter.com/elonmusk",
         "https://www.linkedin.com/in/satyanadella/"
@@ -163,16 +165,16 @@ def main():
     
     # Sonuçları göster
     print("\n" + "=" * 50)
-    print(f"📊 Test Results: {tests_passed}/{total_tests} passed")
+    print(f"Test Results: {tests_passed}/{total_tests} passed")
     
     if tests_passed == total_tests:
-        print("🎉 All tests passed!")
+        print("SUCCESS: All tests passed!")
     elif tests_passed > 0:
-        print("⚠️  Some tests passed")
+        print("WARNING: Some tests passed")
     else:
-        print("❌ All tests failed!")
+        print("FAIL: All tests failed!")
     
-    print("\n💡 Tips:")
+    print("\nTips:")
     print("   - API Docs: http://localhost:5001/docs")
     print("   - Health Check: http://localhost:5001/health")
     print("   - Container Logs: docker logs analyzer-api")
