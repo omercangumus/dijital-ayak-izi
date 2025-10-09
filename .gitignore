@@ -56,8 +56,13 @@ logs/
 # API Keys (güvenlik için)
 config.env
 .env
+.env.*
 *.key
 *.pem
+env_example.txt
+backend/config.env
+backend/.env
+backend/.env.*
 
 # Temporary files
 *.tmp
