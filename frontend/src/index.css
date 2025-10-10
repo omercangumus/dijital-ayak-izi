@@ -1,6 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Source+Code+Pro:wght@300;400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Terminal/Hacker Theme Styles */
+body {
+  font-family: 'Source Code Pro', 'VT323', monospace;
+  letter-spacing: 0.05em;
+  background: #030712;
+  color: #4ade80;
+}
+
+/* Glitch Effect */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.glitch {
+  animation: glitch 0.3s infinite;
+}
+
+/* CRT Screen Effect */
+.crt {
+  position: relative;
+  background: #000;
+}
+
+.crt::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(transparent 50%, rgba(0, 255, 0, 0.03) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Typing Animation */
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.typing {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 2s steps(40, end);
+}
+
+/* Blinking Cursor */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.blink {
+  animation: blink 1s infinite;
+}
+
+/* Terminal Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4ade80;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #22c55e;
+}
+
+/* Selection Color */
+::selection {
+  background: #4ade80;
+  color: #030712;
+}
+
+/* Terminal Text Effects */
+.terminal-text {
+  text-shadow: 0 0 5px #4ade80;
+}
+
+/* Hover Effects */
+.terminal-button:hover {
+  box-shadow: 0 0 10px #4ade80;
+  text-shadow: 0 0 5px #4ade80;
+}
 
 @layer base {
 * {

@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['Source Code Pro', 'VT323', 'monospace'],
       },
       colors: {
         primary: {
