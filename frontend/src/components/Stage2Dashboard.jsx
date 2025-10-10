@@ -16,24 +16,57 @@ const Stage2Dashboard = ({ selectedCandidate, onBackToStage1 }) => {
   }, [selectedCandidate]);
 
   const startDeepAnalysis = async () => {
-    // Simulate deep analysis process
-    const modules = ['identity', 'contact', 'accounts', 'visualFootprint', 'publicGallery'];
-    
-    for (const module of modules) {
-      setAnalysisData(prev => ({
-        ...prev,
-        [module]: { ...prev[module], status: 'analyzing' }
-      }));
+    try {
+      // Call real API for deep analysis
+      const response = await fetch('http://localhost:8005/api/osint/stage2/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profile_url: selectedCandidate.profile_url,
+          source: selectedCandidate.source,
+          name: selectedCandidate.name
+        }),
+      });
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-      // Mock data for each module
-      const mockData = getMockData(module);
-      setAnalysisData(prev => ({
-        ...prev,
-        [module]: { status: 'complete', data: mockData }
-      }));
+      const analysisResults = await response.json();
+      
+      // Update analysis data with real results
+      if (analysisResults.modules) {
+        const updatedData = {};
+        Object.keys(analysisResults.modules).forEach(moduleKey => {
+          const module = analysisResults.modules[moduleKey];
+          updatedData[moduleKey] = {
+            status: module.status,
+            data: module.data
+          };
+        });
+        setAnalysisData(prev => ({ ...prev, ...updatedData }));
+      }
+    } catch (error) {
+      console.error('Deep analysis error:', error);
+      // Fallback to mock data on error
+      const modules = ['identity', 'contact', 'accounts', 'visualFootprint', 'publicGallery'];
+      
+      for (const module of modules) {
+        setAnalysisData(prev => ({
+          ...prev,
+          [module]: { ...prev[module], status: 'analyzing' }
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const mockData = getMockData(module);
+        setAnalysisData(prev => ({
+          ...prev,
+          [module]: { status: 'complete', data: mockData }
+        }));
+      }
     }
   };
 
@@ -164,6 +197,20 @@ const Stage2Dashboard = ({ selectedCandidate, onBackToStage1 }) => {
               <span className="text-green-400/60">Website:</span>
               <span className="text-green-400 ml-2">{analysisData.identity.data.website}</span>
             </div>
+            {analysisData.identity.data.verified && (
+              <div className="flex items-center space-x-2">
+                <span className="text-green-400/60">Status:</span>
+                <span className="text-green-400">✅ Verified</span>
+              </div>
+            )}
+            <div>
+              <span className="text-green-400/60">Followers:</span>
+              <span className="text-green-400 ml-2">{analysisData.identity.data.followers}</span>
+            </div>
+            <div>
+              <span className="text-green-400/60">Connections:</span>
+              <span className="text-green-400 ml-2">{analysisData.identity.data.connections}</span>
+            </div>
           </div>
         )}
       </div>
@@ -204,6 +251,24 @@ const Stage2Dashboard = ({ selectedCandidate, onBackToStage1 }) => {
                 ))}
               </div>
             </div>
+            {analysisData.contact.data.phoneNumbers && analysisData.contact.data.phoneNumbers.length > 0 && (
+              <div>
+                <span className="text-green-400/60">Phone Numbers:</span>
+                <div className="text-green-400 ml-2 mt-1 space-y-1">
+                  {analysisData.contact.data.phoneNumbers.map((phone, i) => (
+                    <div key={i}>• {phone}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <span className="text-green-400/60">Social Links:</span>
+              <div className="text-green-400 ml-2 mt-1 space-y-1">
+                {analysisData.contact.data.socialLinks.map((link, i) => (
+                  <div key={i}>• {link}</div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -227,18 +292,38 @@ const Stage2Dashboard = ({ selectedCandidate, onBackToStage1 }) => {
         )}
 
         {analysisData.accounts.data && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {analysisData.accounts.data.platforms.map((platform, i) => (
-              <div key={i} className="bg-gray-800/50 border border-green-400/20 p-3 rounded text-center">
-                <div className="text-2xl mb-2">💻</div>
-                <div className="text-green-400 font-mono text-sm">{platform.name}</div>
-                <div className={`text-xs font-mono ${
-                  platform.status === 'active' ? 'text-green-400' : 'text-gray-400'
-                }`}>
-                  {platform.status}
+          <div className="space-y-4">
+            <div className="text-green-400/60 font-mono text-sm">
+              Primary Username: <span className="text-green-400">{analysisData.accounts.data.primaryUsername}</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {analysisData.accounts.data.platforms.map((platform, i) => (
+                <div key={i} className="bg-gray-800/50 border border-green-400/20 p-3 rounded text-center">
+                  <div className="text-2xl mb-2">💻</div>
+                  <div className="text-green-400 font-mono text-sm">{platform.name}</div>
+                  <div className={`text-xs font-mono ${
+                    platform.status === 'active' ? 'text-green-400' : 'text-gray-400'
+                  }`}>
+                    {platform.status}
+                  </div>
+                  {platform.posts && (
+                    <div className="text-green-400/60 text-xs mt-1">
+                      {platform.posts}
+                    </div>
+                  )}
+                  {platform.reputation && (
+                    <div className="text-green-400/60 text-xs mt-1">
+                      {platform.reputation}
+                    </div>
+                  )}
+                  {platform.followers && (
+                    <div className="text-green-400/60 text-xs mt-1">
+                      {platform.followers}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

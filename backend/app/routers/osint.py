@@ -73,13 +73,30 @@ class GoogleDorkingService:
         platforms = ['LinkedIn', 'Facebook', 'Twitter', 'Instagram', 'GitHub']
         mock_candidates = []
         
+        # Create more realistic mock data
+        bios = [
+            f"{firstName} {lastName} is a software engineer with expertise in Python and JavaScript.",
+            f"Professional {firstName} {lastName} working in the technology sector.",
+            f"{firstName} {lastName} - Marketing specialist with 5+ years experience.",
+            f"Data scientist {firstName} {lastName} passionate about AI and machine learning.",
+            f"{firstName} {lastName} is a UI/UX designer creating amazing digital experiences."
+        ]
+        
+        locations = [
+            "Istanbul, Turkey",
+            "Ankara, Turkey", 
+            "Izmir, Turkey",
+            "Bursa, Turkey",
+            "Antalya, Turkey"
+        ]
+        
         for i, platform in enumerate(platforms):
             candidate = {
                 "source": platform,
-                "name": f"{firstName} {lastName} - {platform} Profile",
+                "name": f"{firstName} {lastName}",
                 "profile_url": f"https://{platform.lower()}.com/in/{firstName.lower()}{lastName.lower()}{i+1}",
-                "profile_pic_url": f"https://via.placeholder.com/150?text={firstName[0]}{lastName[0]}",
-                "snippet": f"{firstName} {lastName} is a professional based in Turkey. Active on {platform} with public profile information available."
+                "profile_pic_url": f"https://api.dicebear.com/7.x/avataaars/svg?seed={firstName}{lastName}{i}",
+                "snippet": f"{bios[i % len(bios)]} Based in {locations[i % len(locations)]}. Active on {platform} with public profile information available."
             }
             mock_candidates.append(candidate)
         
@@ -134,13 +151,19 @@ class DeepAnalysisService:
     def _analyze_identity(self, profile_url: str, name: str) -> Dict[str, Any]:
         """Module 1: Extract identity information"""
         # Simulate profile scraping
+        name_parts = name.split()
+        first_name = name_parts[0] if name_parts else "User"
+        last_name = name_parts[1] if len(name_parts) > 1 else "Surname"
+        
         return {
             'fullName': name,
-            'username': f"@{name.lower().replace(' ', '')}",
-            'bio': f"Professional profile of {name}. Active on social media and professional networks.",
-            'location': 'Turkey',
-            'website': f"https://{name.lower().replace(' ', '')}.dev",
-            'verified': False
+            'username': f"@{first_name.lower()}{last_name.lower()}",
+            'bio': f"Professional {first_name} {last_name} with expertise in technology and innovation. Passionate about digital transformation and building meaningful connections in the tech community.",
+            'location': 'Istanbul, Turkey',
+            'website': f"https://{first_name.lower()}{last_name.lower()}.dev",
+            'verified': True,
+            'followers': '2.5K',
+            'connections': '500+'
         }
     
     def _analyze_contact(self, profile_url: str, name: str) -> Dict[str, Any]:
@@ -152,17 +175,20 @@ class DeepAnalysisService:
         
         return {
             'foundEmails': [
-                f"{first_name}.{last_name}@company.com",
-                f"{first_name}{last_name}@university.edu"
+                f"{first_name}.{last_name}@techcorp.com",
+                f"{first_name}{last_name}@university.edu.tr"
             ],
             'guessedEmails': [
-                f"{first_name[0]}.{last_name}@corp.com [GUESS]",
-                f"{first_name}@startup.com [GUESS]"
+                f"{first_name[0]}.{last_name}@startup.com [GUESS]",
+                f"{first_name}@consulting.com [GUESS]",
+                f"{first_name}.{last_name}@freelance.net [GUESS]"
             ],
-            'phoneNumbers': [],
+            'phoneNumbers': ['+90 532 XXX XX XX'],
             'socialLinks': [
                 profile_url,
-                f"https://linkedin.com/in/{first_name}{last_name}"
+                f"https://linkedin.com/in/{first_name}{last_name}",
+                f"https://github.com/{first_name}{last_name}",
+                f"https://twitter.com/{first_name}{last_name}"
             ]
         }
     
@@ -173,11 +199,13 @@ class DeepAnalysisService:
         return {
             'primaryUsername': username,
             'platforms': [
-                {'name': 'GitHub', 'url': f'https://github.com/{username}', 'status': 'active'},
-                {'name': 'Stack Overflow', 'url': f'https://stackoverflow.com/users/{username}', 'status': 'active'},
-                {'name': 'Reddit', 'url': f'https://reddit.com/u/{username}', 'status': 'inactive'},
-                {'name': 'Medium', 'url': f'https://medium.com/@{username}', 'status': 'active'},
-                {'name': 'Dev.to', 'url': f'https://dev.to/{username}', 'status': 'active'}
+                {'name': 'GitHub', 'url': f'https://github.com/{username}', 'status': 'active', 'posts': '45 repos'},
+                {'name': 'Stack Overflow', 'url': f'https://stackoverflow.com/users/{username}', 'status': 'active', 'reputation': '2.1K'},
+                {'name': 'Reddit', 'url': f'https://reddit.com/u/{username}', 'status': 'inactive', 'karma': '156'},
+                {'name': 'Medium', 'url': f'https://medium.com/@{username}', 'status': 'active', 'articles': '12'},
+                {'name': 'Dev.to', 'url': f'https://dev.to/{username}', 'status': 'active', 'followers': '89'},
+                {'name': 'Behance', 'url': f'https://behance.net/{username}', 'status': 'active', 'projects': '8'},
+                {'name': 'Dribbble', 'url': f'https://dribbble.com/{username}', 'status': 'active', 'shots': '23'}
             ]
         }
     

@@ -27,30 +27,37 @@ function App() {
   };
 
   // OSINT Stage 1 handlers
-  const handleStage1Search = async (formData) => {
+  const handleStage1Search = async (formData, candidatesData = null) => {
     setSearchData(formData);
-    setIsSearchingCandidates(true);
     
-    try {
-      const response = await fetch('http://localhost:8005/api/osint/stage1/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const candidatesData = await response.json();
+    if (candidatesData) {
+      // Data already fetched in Stage1SearchForm
       setCandidates(candidatesData);
-    } catch (err) {
-      setError(err.message);
-      setAppState('error');
-    } finally {
-      setIsSearchingCandidates(false);
+    } else {
+      // Fallback: fetch data here if not provided
+      setIsSearchingCandidates(true);
+      
+      try {
+        const response = await fetch('http://localhost:8005/api/osint/stage1/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const candidatesData = await response.json();
+        setCandidates(candidatesData);
+      } catch (err) {
+        setError(err.message);
+        setAppState('error');
+      } finally {
+        setIsSearchingCandidates(false);
+      }
     }
   };
 

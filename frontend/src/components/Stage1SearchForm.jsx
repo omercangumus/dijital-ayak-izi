@@ -16,9 +16,27 @@ const Stage1SearchForm = ({ onSearchStart }) => {
 
     setIsSearching(true);
     try {
-      await onSearchStart(formData);
+      const response = await fetch('http://localhost:8005/api/osint/stage1/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          city: formData.city
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const candidates = await response.json();
+      await onSearchStart(formData, candidates);
     } catch (error) {
       console.error('Search error:', error);
+      alert(`Arama hatası: ${error.message}`);
     } finally {
       setIsSearching(false);
     }
