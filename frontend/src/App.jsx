@@ -4,15 +4,64 @@ import IntroPrompt from './components/IntroPrompt';
 import SearchInput from './components/SearchInput';
 import AnalysisOutput from './components/AnalysisOutput';
 import CliError from './components/CliError';
+import Stage1SearchForm from './components/Stage1SearchForm';
+import CandidateResults from './components/CandidateResults';
+import Stage2Dashboard from './components/Stage2Dashboard';
 
 function App() {
-  const [appState, setAppState] = useState('intro'); // intro, ready, analyzing, complete, error
+  const [appState, setAppState] = useState('intro'); // intro, stage1, stage2, error
   const [currentUrl, setCurrentUrl] = useState('');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
+  
+  // OSINT Stage 1 state
+  const [searchData, setSearchData] = useState(null);
+  const [candidates, setCandidates] = useState([]);
+  const [isSearchingCandidates, setIsSearchingCandidates] = useState(false);
+  
+  // OSINT Stage 2 state
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   const handleIntroComplete = () => {
-    setAppState('ready');
+    setAppState('stage1');
+  };
+
+  // OSINT Stage 1 handlers
+  const handleStage1Search = async (formData) => {
+    setSearchData(formData);
+    setIsSearchingCandidates(true);
+    
+    try {
+      const response = await fetch('http://localhost:8005/api/osint/stage1/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const candidatesData = await response.json();
+      setCandidates(candidatesData);
+    } catch (err) {
+      setError(err.message);
+      setAppState('error');
+    } finally {
+      setIsSearchingCandidates(false);
+    }
+  };
+
+  const handleCandidateSelect = (candidate) => {
+    setSelectedCandidate(candidate);
+    setAppState('stage2');
+  };
+
+  const handleBackToStage1 = () => {
+    setAppState('stage1');
+    setSelectedCandidate(null);
   };
 
   const handleAnalysisStart = (url) => {
@@ -52,37 +101,28 @@ function App() {
           <IntroPrompt onComplete={handleIntroComplete} />
         )}
 
-        {/* Ready State - Show Input */}
-        {(appState === 'ready' || appState === 'complete') && (
+        {/* OSINT Stage 1: Candidate Search */}
+        {appState === 'stage1' && (
           <div className="space-y-6">
-            <SearchInput 
-              onSubmit={handleAnalysisStart}
-              isAnalyzing={appState === 'analyzing'}
+            <Stage1SearchForm 
+              onSearchStart={handleStage1Search}
             />
             
-            {/* Show new analysis button if completed */}
-            {appState === 'complete' && (
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleNewAnalysis}
-                  className="text-green-400 hover:text-green-300 border border-green-400/50 px-4 py-2 hover:bg-green-400/10 transition-all duration-200 font-mono tracking-wider"
-                >
-                  [NEW_ANALYSIS]
-                </button>
-                <span className="text-green-400/60 text-sm">
-                  Ready for next analysis
-                </span>
-              </div>
+            {candidates.length > 0 && (
+              <CandidateResults
+                candidates={candidates}
+                onCandidateSelect={handleCandidateSelect}
+                isSearching={isSearchingCandidates}
+              />
             )}
           </div>
         )}
 
-        {/* Analyzing State */}
-        {appState === 'analyzing' && (
-          <AnalysisOutput
-            url={currentUrl}
-            onComplete={handleAnalysisComplete}
-            onError={handleAnalysisError}
+        {/* OSINT Stage 2: Deep Analysis */}
+        {appState === 'stage2' && selectedCandidate && (
+          <Stage2Dashboard
+            selectedCandidate={selectedCandidate}
+            onBackToStage1={handleBackToStage1}
           />
         )}
 
@@ -90,16 +130,8 @@ function App() {
         {appState === 'error' && (
           <CliError 
             error={error} 
-            onRetry={handleRetry}
+            onRetry={() => setAppState('stage1')}
           />
-        )}
-
-        {/* Terminal Prompt for Ready State */}
-        {appState === 'ready' && (
-          <div className="mt-8 text-green-400/60 text-sm">
-              <div>// &gt; Type a social media URL above and press ENTER to begin analysis</div>
-              <div>// &gt; Supported platforms: Instagram, Twitter, LinkedIn, Facebook</div>
-          </div>
         )}
       </div>
     </TerminalShell>

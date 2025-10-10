@@ -7,14 +7,16 @@ const IntroPrompt = ({ onComplete }) => {
   const [isComplete, setIsComplete] = useState(false);
 
   const introLines = [
-    'INITIALIZING CORE MODULES...',
-    'LOADING KERNEL v4.2.0... [OK]',
+    'INITIALIZING ADVANCED OSINT PLATFORM...',
+    'LOADING GOOGLE DORKING ENGINE...',
     'ESTABLISHING SECURE CONNECTION... [200]',
-    'LOADING DIGITAL FOOTPRINT DATABASE... [OK]',
-    'SCANNER ENGINES ACTIVATED... [READY]',
+    'LOADING PROFILE ANALYSIS MODULES... [OK]',
+    'REVERSE IMAGE SEARCH ACTIVATED... [READY]',
+    'USERNAME EXPANSION MODULE LOADED... [OK]',
+    'ETHICAL FRAMEWORK VERIFIED... [KVKK/GDPR]',
     'ACCESS GRANTED.',
     '',
-    '// &gt; '
+    '// &gt; OSINT PROFESSIONAL TOOL READY'
   ];
 
   useEffect(() => {

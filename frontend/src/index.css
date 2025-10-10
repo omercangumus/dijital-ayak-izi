@@ -104,11 +104,13 @@ body {
 
 @layer base {
 * {
-    border-color: hsl(var(--border));
+    border-color: #4ade80;
 }
 
 body {
-    @apply bg-slate-900 text-slate-200 font-sans;
+    background: #030712;
+    color: #e2e8f0;
+    font-family: 'Source Code Pro', monospace;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
