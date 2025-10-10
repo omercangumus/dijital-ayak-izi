@@ -30,7 +30,7 @@ const SearchInput = ({ onSubmit, isAnalyzing }) => {
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-2">
         <div className="flex items-center space-x-2">
-          <span className="text-green-400">// > ANALYZE_PROFILE --url=</span>
+          <span className="text-green-400">// &gt; ANALYZE_PROFILE --url=</span>
           <input
             ref={inputRef}
             type="text"

@@ -14,7 +14,7 @@ const IntroPrompt = ({ onComplete }) => {
     'SCANNER ENGINES ACTIVATED... [READY]',
     'ACCESS GRANTED.',
     '',
-    '// > '
+    '// &gt; '
   ];
 
   useEffect(() => {

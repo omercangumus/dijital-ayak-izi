@@ -10,7 +10,7 @@ const TerminalShell = ({ children }) => {
           <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           <span className="ml-4 text-green-400/80 text-sm tracking-wider">
-            // > DIGI-FOOTPRINT ANALYZER v1.1.2
+            // &gt; DIGI-FOOTPRINT ANALYZER v1.1.2
           </span>
         </div>
         <div className="flex items-center space-x-1">

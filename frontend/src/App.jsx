@@ -97,8 +97,8 @@ function App() {
         {/* Terminal Prompt for Ready State */}
         {appState === 'ready' && (
           <div className="mt-8 text-green-400/60 text-sm">
-            <div>// > Type a social media URL above and press ENTER to begin analysis</div>
-            <div>// > Supported platforms: Instagram, Twitter, LinkedIn, Facebook</div>
+              <div>// &gt; Type a social media URL above and press ENTER to begin analysis</div>
+              <div>// &gt; Supported platforms: Instagram, Twitter, LinkedIn, Facebook</div>
           </div>
         )}
       </div>
