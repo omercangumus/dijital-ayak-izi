@@ -5,6 +5,9 @@ import asyncio
 import aiohttp
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from .google_apis import search_youtube_videos, search_google_places, analyze_image_with_vision, get_geolocation_info
 
 from ..core.config import settings
 
@@ -35,25 +38,24 @@ def get_session():
     return _session
 
 
-def fast_search_serpapi(query: str, engine: str = "google", num: int = 3) -> List[dict]:
-    """Hızlı SerpAPI araması - connection pooling ile"""
-    if not settings.serpapi_key:
+def fast_search_scraperapi(query: str, num: int = 3) -> List[dict]:
+    """ScraperAPI ile Google araması"""
+    if not settings.scraperapi_key:
         return []
     
     session = get_session()
-    url = "https://serpapi.com/search.json"
+    url = "https://api.scraperapi.com/search"
     params = {
-        "engine": engine,
-        "q": query,
-        "api_key": settings.serpapi_key,
-        "num": num
+        "api_key": settings.scraperapi_key,
+        "url": f"https://www.google.com/search?q={query}&num={num}",
+        "country_code": "tr"  # Türkiye için
     }
     
     try:
-        print(f"[>] SerpAPI çağrısı: {query}")
-        r = session.get(url, params=params, timeout=5)
+        print(f"[>] ScraperAPI çağrısı: {query}")
+        r = session.get(url, params=params, timeout=10)
         
-        print(f"[<] SerpAPI yanıt kodu: {r.status_code}")
+        print(f"[<] ScraperAPI yanıt kodu: {r.status_code}")
         print(f"[<] Content-Type: {r.headers.get('content-type', 'unknown')}")
         
         if not r.ok:
@@ -65,43 +67,84 @@ def fast_search_serpapi(query: str, engine: str = "google", num: int = 3) -> Lis
             print(f"[X] JSON değil: {r.text[:200]}")
             return []
         
-        data = r.json()
-        
-        if 'error' in data:
-            print(f"[X] SerpAPI error: {data.get('error')}")
+        # ScraperAPI HTML yanıt döndürür, JSON değil
+        if 'text/html' in r.headers.get('content-type', ''):
+            print(f"[OK] ScraperAPI HTML yanıt aldı, parse ediliyor...")
+            # HTML'i parse et (basit yaklaşım)
+            html_content = r.text
+            results = []
+            
+            # Basit HTML parsing - Google sonuçları için
+            import re
+            
+            # Başlık ve link çıkarma
+            title_pattern = r'<h3[^>]*>.*?<a[^>]*href="([^"]*)"[^>]*>([^<]*)</a>'
+            matches = re.findall(title_pattern, html_content, re.DOTALL)
+            
+            for i, (link, title) in enumerate(matches[:num]):
+                if link.startswith('/url?q='):
+                    link = link.split('/url?q=')[1].split('&')[0]
+                elif link.startswith('/'):
+                    link = f"https://www.google.com{link}"
+                
+                results.append({
+                    "title": title.strip(),
+                    "link": link,
+                    "snippet": "",  # Basit parsing için şimdilik boş
+                    "position": i + 1
+                })
+            
+            print(f"[OK] ScraperAPI: {len(results)} sonuç parse edildi")
+            return results
+        else:
+            print(f"[X] ScraperAPI beklenmeyen content-type: {r.headers.get('content-type')}")
             return []
         
-        results = []
-        if engine == "google_images":
-            images = data.get("images_results", [])
-            print(f"[OK] {len(images)} görsel bulundu")
-            for item in images[:num]:
-                results.append({
-                    "title": item.get("title", "Image"),
-                    "link": item.get("original", item.get("link", "#")),
-                    "thumbnail": item.get("thumbnail", ""),
-                    "source": "google_images",
-                    "type": "image",
-                    "source_url": item.get("source", ""),
-                    "date": item.get("date", "")
-                })
-        else:
-            organic = data.get("organic_results", [])
-            print(f"[OK] {len(organic)} web sonucu bulundu")
-            for item in organic[:num]:
-                results.append({
-                    "title": item.get("title", ""),
-                    "link": item.get("link", ""),
-                    "snippet": item.get("snippet", ""),
-                    "source": "google",
-                    "type": "web"
-                })
-        
-        print(f"[OK] Toplam {len(results)} sonuç döndürülüyor")
-        return results
+    except requests.exceptions.RequestException as e:
+        print(f"[X] ScraperAPI network hatası: {str(e)}")
+        return []
     except Exception as e:
-        print(f"[X] Fast SerpAPI error: {str(e)}")
-    return []
+        print(f"[X] ScraperAPI exception: {str(e)}")
+        return []
+
+
+def fast_search_google_api(query: str, num: int = 3) -> List[dict]:
+    """Google Custom Search API ile arama"""
+    if not settings.google_api_key or not settings.google_search_engine_id:
+        return []
+    
+    try:
+        print(f"[>] Google Custom Search API çağrısı: {query}")
+        
+        # Google Custom Search API servisini oluştur
+        service = build("customsearch", "v1", developerKey=settings.google_api_key)
+        
+        # Arama yap
+        result = service.cse().list(
+            q=query,
+            cx=settings.google_search_engine_id,
+            num=min(num, 10)  # Google API maksimum 10 sonuç döndürür
+        ).execute()
+        
+        results = []
+        for item in result.get("items", [])[:num]:
+            results.append({
+                "title": item.get("title", ""),
+                "link": item.get("link", ""),
+                "snippet": item.get("snippet", ""),
+                "source": "google",
+                "type": "web"
+            })
+        
+        print(f"[OK] Google API: {len(results)} sonuç bulundu")
+        return results
+        
+    except HttpError as e:
+        print(f"[X] Google API HTTP error: {e}")
+        return []
+    except Exception as e:
+        print(f"[X] Google API error: {str(e)}")
+        return []
 
 
 def parallel_search_platforms(query: str, platforms: List[str]) -> Dict[str, List[dict]]:
@@ -111,7 +154,7 @@ def parallel_search_platforms(query: str, platforms: List[str]) -> Dict[str, Lis
     def search_platform(platform):
         try:
             search_query = f"{query} site:{platform}"
-            platform_results = fast_search_serpapi(search_query, num=1)  # Sadece 1 sonuç
+            platform_results = fast_search_google_api(search_query, num=1)  # Sadece 1 sonuç
             
             # Profil fotoğrafı ara - sadece önemli platformlar için
             if platform_results and platform in ["twitter.com", "instagram.com", "facebook.com", "linkedin.com"]:
@@ -119,7 +162,7 @@ def parallel_search_platforms(query: str, platforms: List[str]) -> Dict[str, Lis
                 if username:
                     # Hızlı profil fotoğrafı arama
                     photo_query = f'"{username}" {platform} avatar'
-                    photo_results = fast_search_serpapi(photo_query, engine="google_images", num=1)
+                    photo_results = fast_search_google_api(photo_query, num=1)
                     if photo_results:
                         platform_results[0]["profile_photo"] = photo_results[0].get("thumbnail", "")
             
@@ -167,7 +210,7 @@ def search_google_images(query: str) -> List[dict]:
         return []
     
     print(f"[>] Google Images: {query}")
-    results = fast_search_serpapi(query, engine="google_images", num=5)  # 5 görsel
+    results = fast_search_google_api(query, num=5)  # 5 görsel
     
     # Sonuçları işle
     image_results = []
@@ -359,7 +402,7 @@ def search_social_media(query: str) -> List[dict]:
     results = []
     for platform in platforms:
         search_query = f"{query} {platform}"
-        platform_results = fast_search_serpapi(search_query, num=2)
+        platform_results = fast_search_google_api(search_query, num=2)
         
         for item in platform_results:
             # Platform ismini çıkar
@@ -399,23 +442,19 @@ def search_social_media(query: str) -> List[dict]:
 
 
 def get_profile_photo(profile_url: str, platform: str) -> str:
-    """Profil fotoğrafını çekmek için platform-specific arama"""
-    if not settings.serpapi_key or not profile_url:
+    """Profil fotoğrafını çekmek için platform-specific arama - ScraperAPI öncelikli"""
+    if not profile_url:
         return ""
     
     try:
         # Platform'a göre profil fotoğrafı arama stratejisi
         if platform == "twitter":
-            # Twitter profil fotoğrafı için özel arama
             search_query = f"site:twitter.com {profile_url.split('/')[-1]} profile picture"
         elif platform == "linkedin":
-            # LinkedIn profil fotoğrafı için
             search_query = f"site:linkedin.com {profile_url.split('/')[-1]} profile photo"
         elif platform == "instagram":
-            # Instagram profil fotoğrafı için
             search_query = f"site:instagram.com {profile_url.split('/')[-1]} profile picture"
         elif platform == "facebook":
-            # Facebook profil fotoğrafı için
             search_query = f"site:facebook.com {profile_url.split('/')[-1]} profile photo"
         elif platform == "youtube":
             search_query = f"site:youtube.com {profile_url.split('/')[-1]} channel avatar"
@@ -426,60 +465,98 @@ def get_profile_photo(profile_url: str, platform: str) -> str:
         else:
             search_query = f"{profile_url} profile photo"
         
-        url = "https://serpapi.com/search.json"
-        params = {
-            "engine": "google_images",
-            "q": search_query,
-            "api_key": settings.serpapi_key,
-            "num": 3
-        }
+        print(f"[>] Profil fotoğrafı aranıyor: {search_query}")
         
-        print(f"[>] Profile photo search: {search_query}")
-        r = requests.get(url, params=params, timeout=8)
+        # Önce ScraperAPI'yi dene
+        if settings.scraperapi_key:
+            try:
+                scraperapi_url = "https://api.scraperapi.com/search"
+                scraperapi_params = {
+                    "api_key": settings.scraperapi_key,
+                    "query": search_query,
+                    "num": 3,
+                    "country": "tr"
+                }
+                
+                r = requests.get(scraperapi_url, params=scraperapi_params, timeout=8)
+                if r.ok and 'application/json' in r.headers.get('content-type', ''):
+                    data = r.json()
+                    images = data.get("images_results", [])
+                    if images:
+                        photo_url = images[0].get("thumbnail", images[0].get("original", ""))
+                        print(f"[OK] ScraperAPI profil fotoğrafı bulundu: {photo_url[:50]}...")
+                        return photo_url
+            except Exception as e:
+                print(f"[X] ScraperAPI profil fotoğrafı hatası: {str(e)}")
         
-        if r.ok and 'application/json' in r.headers.get('content-type', ''):
-            data = r.json()
-            images = data.get("images_results", [])
-            if images:
-                photo_url = images[0].get("thumbnail", images[0].get("original", ""))
-                print(f"[OK] Profile photo found: {photo_url[:50]}...")
-                return photo_url
+        # ScraperAPI başarısız olursa SerpAPI'yi dene
+        if settings.serpapi_key:
+            try:
+                serpapi_url = "https://serpapi.com/search.json"
+                serpapi_params = {
+                    "engine": "google_images",
+                    "q": search_query,
+                    "api_key": settings.serpapi_key,
+                    "num": 3
+                }
+                
+                r = requests.get(serpapi_url, params=serpapi_params, timeout=8)
+                if r.ok and 'application/json' in r.headers.get('content-type', ''):
+                    data = r.json()
+                    images = data.get("images_results", [])
+                    if images:
+                        photo_url = images[0].get("thumbnail", images[0].get("original", ""))
+                        print(f"[OK] SerpAPI profil fotoğrafı bulundu: {photo_url[:50]}...")
+                        return photo_url
+            except Exception as e:
+                print(f"[X] SerpAPI profil fotoğrafı hatası: {str(e)}")
         
         time.sleep(0.3)  # Rate limit
     except Exception as e:
-        print(f"[X] Profile photo error: {str(e)}")
+        print(f"[X] Profil fotoğrafı genel hatası: {str(e)}")
     
     return ""
 
 
+def search_google_api(query: str) -> List[dict]:
+    """Google araması - önce ScraperAPI, sonra SerpAPI dener"""
+    
+    # Önce ScraperAPI'yi dene
+    if settings.scraperapi_key:
+        try:
+            print(f"[>] ScraperAPI ile arama yapiliyor: {query}")
+            results = fast_search_scraperapi(query, num=10)
+            if results:
+                print(f"[OK] ScraperAPI basarili, {len(results)} sonuc bulundu")
+                return results
+            else:
+                print(f"[X] ScraperAPI sonuc bulunamadi, SerpAPI deneniyor...")
+        except Exception as e:
+            print(f"[X] ScraperAPI hatasi: {str(e)}, SerpAPI deneniyor...")
+    
+    # ScraperAPI başarısız olursa Google API'yi dene
+    if settings.google_api_key and settings.google_search_engine_id:
+        try:
+            print(f"[>] Google API ile arama yapiliyor: {query}")
+            results = fast_search_google_api(query, num=10)
+            if results:
+                print(f"[OK] Google API basarili, {len(results)} sonuc bulundu")
+            else:
+                print(f"[X] Google API sonuc bulunamadi")
+            return results
+        except Exception as e:
+            print(f"[X] Google API exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    print("[!] Ne SCRAPERAPI_KEY ne de GOOGLE_API_KEY bulunamadi")
+    return []
+
+
 def search_serpapi(query: str) -> List[dict]:
-    if not settings.serpapi_key:
-        print("[!] SERPAPI_KEY bulunamadi")
-        return []
-    
-    # Optimize edilmiş arama
-    
-    try:
-        print(f"[>] SerpAPI cagrisi yapiliyor: {query}")
-        
-        # Fast search kullan - daha fazla sonuç
-        results = fast_search_serpapi(query, engine="google", num=10)
-        
-        if results:
-            print(f"[OK] SerpAPI basarili, {len(results)} sonuc bulundu")
-        else:
-            print(f"[X] SerpAPI sonuc bulunamadi")
-        
-        return results
-        
-    except requests.exceptions.RequestException as e:
-        print(f"[X] SerpAPI network hatasi: {str(e)}")
-        return []
-    except Exception as e:
-        print(f"[X] SerpAPI exception: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return []
+    """Geriye dönük uyumluluk için - artık search_google_api kullanılıyor"""
+    return search_google_api(query)
 
 
 def search_hibp(email: str) -> List[dict]:

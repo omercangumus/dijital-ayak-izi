@@ -9,6 +9,8 @@ from .routers import selfscan
 from .routers import image
 from .routers import profile_analysis
 from .routers import osint
+from .routers import google_apis
+from .routers import encryption
 from .services.cleanup import start_scheduler
 from .core.config import settings
 from .core.database import init_db
@@ -40,6 +42,8 @@ def create_app() -> FastAPI:
     app.include_router(image.router, tags=["image"])
     app.include_router(profile_analysis.router, prefix="/api/profile-analysis", tags=["profile-analysis"])
     app.include_router(osint.router, prefix="/api/osint", tags=["osint"])
+    app.include_router(google_apis.router, tags=["google-apis"])
+    app.include_router(encryption.router, tags=["encryption"])
     
     # Static files (React build)
     static_dir = os.path.join(os.path.dirname(__file__), "static")

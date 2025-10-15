@@ -16,9 +16,17 @@ class Settings(BaseModel):
     sqlite_url: str = os.getenv("SQLITE_URL", "sqlite:///./data.db")
     cors_origins: list[str] = [o for o in os.getenv("CORS_ORIGINS", "*").split(",") if o]
     offline_mode: bool = os.getenv("OFFLINE_MODE", "false").lower() in ("1", "true", "yes")
-    serpapi_key: str | None = os.getenv("SERPAPI_KEY")
+    google_api_key: str | None = os.getenv("GOOGLE_API_KEY")
+    google_search_engine_id: str | None = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
+    scraperapi_key: str | None = os.getenv("SCRAPERAPI_KEY")
     hibp_api_key: str | None = os.getenv("HIBP_API_KEY")
     synthetic_mode: bool = os.getenv("SYNTHETIC_MODE", "false").lower() in ("1", "true", "yes")
+    
+    # Yeni Google API'leri
+    google_maps_api_key: str | None = os.getenv("GOOGLE_MAPS_API_KEY")
+    google_places_api_key: str | None = os.getenv("GOOGLE_PLACES_API_KEY")
+    google_youtube_api_key: str | None = os.getenv("GOOGLE_YOUTUBE_API_KEY")
+    google_vision_api_key: str | None = os.getenv("GOOGLE_VISION_API_KEY")
 
 
 settings = Settings()
@@ -27,7 +35,13 @@ settings = Settings()
 print("=" * 50)
 print("CONFIG LOADED:")
 print(f"  ENV: {settings.env}")
-print(f"  SERPAPI_KEY: {'[OK]' if settings.serpapi_key else '[NO]'}")
+print(f"  GOOGLE_API_KEY: {'[OK]' if settings.google_api_key else '[NO]'}")
+print(f"  GOOGLE_SEARCH_ENGINE_ID: {'[OK]' if settings.google_search_engine_id else '[NO]'}")
+print(f"  GOOGLE_MAPS_API_KEY: {'[OK]' if settings.google_maps_api_key else '[NO]'}")
+print(f"  GOOGLE_PLACES_API_KEY: {'[OK]' if settings.google_places_api_key else '[NO]'}")
+print(f"  GOOGLE_YOUTUBE_API_KEY: {'[OK]' if settings.google_youtube_api_key else '[NO]'}")
+print(f"  GOOGLE_VISION_API_KEY: {'[OK]' if settings.google_vision_api_key else '[NO]'}")
+print(f"  SCRAPERAPI_KEY: {'[OK]' if settings.scraperapi_key else '[NO]'}")
 print(f"  HIBP_API_KEY: {'[OK]' if settings.hibp_api_key else '[NO]'}")
 print(f"  SYNTHETIC_MODE: {settings.synthetic_mode}")
 print(f"  OFFLINE_MODE: {settings.offline_mode}")

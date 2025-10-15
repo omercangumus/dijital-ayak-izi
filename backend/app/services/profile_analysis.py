@@ -145,10 +145,10 @@ def search_social_media(name: str, platform: Optional[str] = None) -> List[Dict[
         return []
     
     try:
-        # SerpAPI ile sosyal medya araması
-        if settings.serpapi_key:
+        # Google API ile sosyal medya araması (ScraperAPI öncelikli)
+        if settings.scraperapi_key or settings.google_api_key:
             search_query = f'"{name}" site:twitter.com OR site:linkedin.com OR site:instagram.com OR site:facebook.com'
-            serp_results = _search_with_serpapi(search_query, engine="google", num=10)
+            serp_results = _search_with_google_api_fallback(search_query, engine="google", num=10)
             
             for result in serp_results:
                 platform_name = _extract_platform_from_url(result.get("link", ""))
@@ -308,8 +308,8 @@ def reverse_image_search(image_url: str) -> List[Dict[str, Any]]:
     """
     results = []
     
-    if not settings.serpapi_key:
-        print("[!] SerpAPI anahtarı bulunamadı, ters görsel arama yapılamıyor")
+    if not settings.google_api_key or not settings.google_search_engine_id:
+        print("[!] Google API anahtarı bulunamadı, ters görsel arama yapılamıyor")
         return []
     
     if settings.synthetic_mode:
@@ -334,19 +334,25 @@ def reverse_image_search(image_url: str) -> List[Dict[str, Any]]:
     try:
         print(f"[>] Ters görsel arama başladı: {image_url}")
         
-        # SerpAPI Google Images reverse search
-        search_params = {
-            "engine": "google_reverse_image",
-            "image_url": image_url,
-            "api_key": settings.serpapi_key,
-            "num": 10
-        }
+        # Google Custom Search API ile ters görsel arama
+        from googleapiclient.discovery import build
+        from googleapiclient.errors import HttpError
         
-        response = requests.get("https://serpapi.com/search.json", params=search_params, timeout=15)
+        service = build("customsearch", "v1", developerKey=settings.google_api_key)
         
-        if response.ok:
-            data = response.json()
-            visual_matches = data.get("visual_matches", [])
+        # Ters görsel arama için özel sorgu
+        search_query = f"related:{image_url}"
+        
+        result = service.cse().list(
+            q=search_query,
+            cx=settings.google_search_engine_id,
+            num=10
+        ).execute()
+        
+        response_data = {"items": result.get("items", [])}
+        
+        if response_data.get("items"):
+            visual_matches = response_data.get("items", [])
             
             for match in visual_matches:
                 result = {
@@ -553,21 +559,38 @@ def list_public_photos(url: str) -> List[Dict[str, Any]]:
 
 # Yardımcı fonksiyonlar
 
-def _extract_platform_from_url(url: str) -> Optional[str]:
-    """URL'den platform adını çıkar"""
-    if "twitter.com" in url:
+def _extract_platform_from_url(url: str) -> str:
+    """URL'den platform adını çıkar - her zaman string döndürür"""
+    if not url:
+        return "unknown"
+    
+    url_lower = url.lower()
+    if "twitter.com" in url_lower:
         return "twitter"
-    elif "linkedin.com" in url:
+    elif "linkedin.com" in url_lower:
         return "linkedin"
-    elif "instagram.com" in url:
+    elif "instagram.com" in url_lower:
         return "instagram"
-    elif "facebook.com" in url:
+    elif "facebook.com" in url_lower:
         return "facebook"
-    elif "github.com" in url:
+    elif "github.com" in url_lower:
         return "github"
-    elif "youtube.com" in url:
+    elif "youtube.com" in url_lower:
         return "youtube"
-    return None
+    elif "reddit.com" in url_lower:
+        return "reddit"
+    elif "tiktok.com" in url_lower:
+        return "tiktok"
+    elif "pinterest.com" in url_lower:
+        return "pinterest"
+    elif "snapchat.com" in url_lower:
+        return "snapchat"
+    elif "medium.com" in url_lower:
+        return "medium"
+    elif "behance.net" in url_lower:
+        return "behance"
+    else:
+        return "unknown"
 
 
 def _extract_username_from_url(url: str) -> str:
@@ -590,29 +613,88 @@ def _extract_username_from_url(url: str) -> str:
     return ""
 
 
-def _search_with_serpapi(query: str, engine: str = "google", num: int = 10) -> List[Dict[str, Any]]:
-    """SerpAPI ile arama"""
-    if not settings.serpapi_key:
+def _search_with_scraperapi(query: str, num: int = 10) -> List[Dict[str, Any]]:
+    """ScraperAPI ile arama"""
+    if not settings.scraperapi_key:
+        print("[!] ScraperAPI anahtarı bulunamadı")
         return []
     
     try:
+        print(f"[>] ScraperAPI ile arama yapılıyor: {query}")
         params = {
-            "engine": engine,
-            "q": query,
-            "api_key": settings.serpapi_key,
-            "num": num
+            "api_key": settings.scraperapi_key,
+            "query": query,
+            "num": num,
+            "country": "tr"
         }
         
-        response = requests.get("https://serpapi.com/search.json", params=params, timeout=10)
+        response = requests.get("https://api.scraperapi.com/search", params=params, timeout=10)
+        
+        print(f"[<] ScraperAPI yanıt kodu: {response.status_code}")
         
         if response.ok:
             data = response.json()
-            if engine == "google_images":
-                return data.get("images_results", [])
-            else:
-                return data.get("organic_results", [])
+            results = data.get("organic_results", [])
+            print(f"[OK] ScraperAPI: {len(results)} sonuç bulundu")
+            return results
+        else:
+            print(f"[X] ScraperAPI HTTP hatası: {response.status_code}")
+            print(f"[X] ScraperAPI yanıt: {response.text[:200]}")
     except Exception as e:
-        print(f"[X] SerpAPI arama hatası: {str(e)}")
+        print(f"[X] ScraperAPI arama hatası: {str(e)}")
+        import traceback
+        traceback.print_exc()
+    
+    return []
+
+
+def _search_with_google_api(query: str, engine: str = "google", num: int = 10) -> List[Dict[str, Any]]:
+    """Google Custom Search API ile arama"""
+    if not settings.google_api_key or not settings.google_search_engine_id:
+        return []
+    
+    try:
+        from googleapiclient.discovery import build
+        from googleapiclient.errors import HttpError
+        
+        service = build("customsearch", "v1", developerKey=settings.google_api_key)
+        
+        result = service.cse().list(
+            q=query,
+            cx=settings.google_search_engine_id,
+            num=min(num, 10)
+        ).execute()
+        
+        results = []
+        for item in result.get("items", []):
+            results.append({
+                "title": item.get("title", ""),
+                "link": item.get("link", ""),
+                "snippet": item.get("snippet", "")
+            })
+        
+        return results
+    except Exception as e:
+        print(f"[X] Google API arama hatası: {str(e)}")
+    
+    return []
+
+
+def _search_with_google_api_fallback(query: str, engine: str = "google", num: int = 10) -> List[Dict[str, Any]]:
+    """Google araması - önce ScraperAPI, sonra Google API dener"""
+    
+    # Önce ScraperAPI'yi dene
+    if settings.scraperapi_key:
+        try:
+            results = _search_with_scraperapi(query, num)
+            if results:
+                return results
+        except Exception as e:
+            print(f"[X] ScraperAPI hatası: {str(e)}, Google API deneniyor...")
+    
+    # ScraperAPI başarısız olursa Google API'yi dene
+    if settings.google_api_key and settings.google_search_engine_id:
+        return _search_with_google_api(query, engine, num)
     
     return []
 
@@ -628,7 +710,7 @@ def _search_specific_platform(name: str, platform: str) -> List[Dict[str, Any]]:
     
     query = platform_queries.get(platform.lower())
     if query:
-        return _search_with_serpapi(query)
+        return _search_with_google_api(query)
     
     return []
 

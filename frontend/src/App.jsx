@@ -1,26 +1,17 @@
 import React, { useState } from 'react';
-import TerminalShell from './components/TerminalShell';
 import IntroPrompt from './components/IntroPrompt';
-import SearchInput from './components/SearchInput';
-import AnalysisOutput from './components/AnalysisOutput';
-import CliError from './components/CliError';
 import Stage1SearchForm from './components/Stage1SearchForm';
 import CandidateResults from './components/CandidateResults';
 import Stage2Dashboard from './components/Stage2Dashboard';
+import GoogleAPIs from './components/GoogleAPIs';
 
 function App() {
-  const [appState, setAppState] = useState('intro'); // intro, stage1, stage2, error
-  const [currentUrl, setCurrentUrl] = useState('');
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [error, setError] = useState(null);
-  
-  // OSINT Stage 1 state
+  const [appState, setAppState] = useState('intro'); // intro, stage1, stage2, google-apis
   const [searchData, setSearchData] = useState(null);
   const [candidates, setCandidates] = useState([]);
   const [isSearchingCandidates, setIsSearchingCandidates] = useState(false);
-  
-  // OSINT Stage 2 state
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleIntroComplete = () => {
     setAppState('stage1');
@@ -31,10 +22,8 @@ function App() {
     setSearchData(formData);
     
     if (candidatesData) {
-      // Data already fetched in Stage1SearchForm
       setCandidates(candidatesData);
     } else {
-      // Fallback: fetch data here if not provided
       setIsSearchingCandidates(true);
       
       try {
@@ -54,7 +43,7 @@ function App() {
         setCandidates(candidatesData);
       } catch (err) {
         setError(err.message);
-        setAppState('error');
+        console.error('Search error:', err);
       } finally {
         setIsSearchingCandidates(false);
       }
@@ -71,41 +60,16 @@ function App() {
     setSelectedCandidate(null);
   };
 
-  const handleAnalysisStart = (url) => {
-    setCurrentUrl(url);
-    setAppState('analyzing');
-    setError(null);
-    setAnalysisResult(null);
-  };
-
-  const handleAnalysisComplete = (result) => {
-    setAnalysisResult(result);
-    setAppState('complete');
-  };
-
-  const handleAnalysisError = (err) => {
-    setError(err.message);
-    setAppState('error');
-  };
-
-  const handleRetry = () => {
-    setAppState('ready');
-    setError(null);
-  };
-
-  const handleNewAnalysis = () => {
-    setAppState('ready');
-    setCurrentUrl('');
-    setAnalysisResult(null);
-    setError(null);
+  const handleGoogleAPIs = () => {
+    setAppState('google-apis');
   };
 
   return (
-    <TerminalShell>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-black text-green-400 font-mono p-8">
+      <div className="max-w-4xl mx-auto">
         {/* Intro Animation */}
         {appState === 'intro' && (
-          <IntroPrompt onComplete={handleIntroComplete} />
+          <IntroPrompt onComplete={handleIntroComplete} onGoogleAPIs={handleGoogleAPIs} />
         )}
 
         {/* OSINT Stage 1: Candidate Search */}
@@ -114,6 +78,12 @@ function App() {
             <Stage1SearchForm 
               onSearchStart={handleStage1Search}
             />
+            
+            {error && (
+              <div className="text-red-400 bg-red-900/20 p-4 rounded border border-red-400/30">
+                <strong>Hata:</strong> {error}
+              </div>
+            )}
             
             {candidates.length > 0 && (
               <CandidateResults
@@ -133,15 +103,12 @@ function App() {
           />
         )}
 
-        {/* Error State */}
-        {appState === 'error' && (
-          <CliError 
-            error={error} 
-            onRetry={() => setAppState('stage1')}
-          />
+        {/* Google APIs */}
+        {appState === 'google-apis' && (
+          <GoogleAPIs />
         )}
       </div>
-    </TerminalShell>
+    </div>
   );
 }
 

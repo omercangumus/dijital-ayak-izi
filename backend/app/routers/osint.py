@@ -51,15 +51,31 @@ class GoogleDorkingService:
     
     def search_profiles(self, firstName: str, lastName: str, city: str) -> List[Dict[str, Any]]:
         """Perform Google dorking search for potential profiles"""
+        from app.services.selfscan import search_google_api
+        from app.services.profile_analysis import _search_with_google_api
+        
         queries = self.construct_queries(firstName, lastName, city)
         candidates = []
         
         for query in queries:
             try:
-                # Simulate Google search API call
-                # In real implementation, use Google Custom Search API or SerpAPI
-                mock_results = self._mock_search_results(query, firstName, lastName)
-                candidates.extend(mock_results)
+                print(f"[>] Gerçek arama yapılıyor: {query}")
+                # Gerçek Google araması yap
+                search_results = _search_with_google_api(query, num=5)
+                
+                for result in search_results:
+                    platform = self._extract_platform(result.get('link', ''))
+                    candidate = {
+                        'name': f"{firstName} {lastName}",
+                        'profile_url': result.get('link', ''),
+                        'profile_pic_url': self._extract_profile_pic(result.get('link', '')),
+                        'snippet': result.get('snippet', ''),
+                        'source': platform if platform else 'unknown',
+                        'title': result.get('title', ''),
+                        'position': result.get('position', 0)
+                    }
+                    candidates.append(candidate)
+                    
             except Exception as e:
                 print(f"Search error for query '{query}': {str(e)}")
                 continue
@@ -101,6 +117,24 @@ class GoogleDorkingService:
             mock_candidates.append(candidate)
         
         return mock_candidates
+    
+    def _extract_profile_pic(self, profile_url: str) -> str:
+        """Profil fotoğrafını URL'den çıkar"""
+        try:
+            from app.services.selfscan import get_profile_photo
+            from app.services.profile_analysis import _extract_platform_from_url
+            
+            platform = _extract_platform_from_url(profile_url)
+            if platform:
+                return get_profile_photo(profile_url, platform)
+        except Exception as e:
+            print(f"[X] Profil fotoğrafı çekme hatası: {str(e)}")
+        return ""
+    
+    def _extract_platform(self, url: str) -> str:
+        """URL'den platform adını çıkar"""
+        from app.services.profile_analysis import _extract_platform_from_url
+        return _extract_platform_from_url(url)
     
     def _deduplicate_candidates(self, candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Remove duplicate candidates based on profile_url"""
