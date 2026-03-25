@@ -79,3 +79,7 @@ tests/
 *.bak
 *.backup
 *.old
+
+# Local Data
+backend/backend/data/
+backend/data.db

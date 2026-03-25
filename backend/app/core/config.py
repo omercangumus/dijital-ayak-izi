@@ -10,6 +10,8 @@ load_dotenv(dotenv_path=env_path)
 
 class Settings(BaseModel):
     env: str = os.getenv("ENV", "dev")
+    # GUVENLIK NOTU: secret_key'i uretim ortaminda (prod) MUTLAKA guclu bir degerle degistirin.
+    # Varsayilan "change-me-in-prod" degeri sadece egitim/gelistirme ortamı icindir.
     secret_key: str = os.getenv("SECRET_KEY", "change-me-in-prod")
     access_token_exp_minutes: int = int(os.getenv("ACCESS_TOKEN_EXP_MIN", "60"))
     email_verify_exp_hours: int = int(os.getenv("EMAIL_VERIFY_EXP_H", "24"))
